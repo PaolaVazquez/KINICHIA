@@ -1,9 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
 import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CompaniesService } from '../companies/companies.service';
+
 import { UsersService } from '../users/users.service';
 import { RolesService } from '../roles/roles.service';
 import { PrismaService } from 'src/database/prisma.service';
@@ -17,6 +25,7 @@ export class AuthService {
     private readonly companiesService: CompaniesService,
     private readonly usersService: UsersService,
     private readonly rolesService: RolesService,
+    private readonly jwtService: JwtService,
   ) {}
   async register(dto: RegisterDto) {
     const company = await this.companiesService.findByEmail(dto.companyEmail);
@@ -61,5 +70,30 @@ export class AuthService {
 
       return company;
     });
+  }
+  async login(dto: LoginDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+
+    if (!user) {
+      throw new UnauthorizedException('Correo o contraseña incorrectos.');
+    }
+
+    const passwordMatches = await bcrypt.compare(dto.password, user.password);
+
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Correo o contraseña incorrectos.');
+    }
+    const payload = {
+      sub: user.id,
+      companyId: user.companyId,
+      roleId: user.roleId,
+      email: user.email,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    return {
+      access_token: accessToken,
+    };
   }
 }
