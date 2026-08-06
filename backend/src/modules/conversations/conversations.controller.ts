@@ -9,11 +9,14 @@ import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+import { ApiBearerAuth } from '@nestjs/swagger';
+
 @Controller('conversations')
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
   @Post('import')
+  @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   importConversation(
     @CurrentUser() user: JwtPayload,

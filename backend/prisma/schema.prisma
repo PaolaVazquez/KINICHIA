@@ -115,7 +115,7 @@ model Conversation {
   updatedAt DateTime @updatedAt
 
   @@index([companyId])
-  @@index([contactIdentifier])
+  @@index([companyId, source, contactIdentifier])
 }
 
 model Analysis {
