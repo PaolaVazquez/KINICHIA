@@ -7,6 +7,7 @@ import { CompaniesModule } from './modules/companies/companies.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
 
 @Module({
   imports: [
@@ -24,6 +25,8 @@ import { RolesModule } from './modules/roles/roles.module';
     AuthModule,
 
     RolesModule,
+
+    ConversationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

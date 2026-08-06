@@ -5,6 +5,9 @@ import { LoginDto } from './dto/login.dto';
 
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import type { AuthenticatedRequest } from './interfaces/authenticated-request.interface';
+
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -21,8 +24,9 @@ export class AuthController {
   }
 
   @Get('profile')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  profile(@Req() request: any) {
+  profile(@Req() request: AuthenticatedRequest) {
     return request.user;
   }
 }

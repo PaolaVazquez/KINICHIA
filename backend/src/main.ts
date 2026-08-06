@@ -49,4 +49,4 @@ async function bootstrap() {
   console.log(`📚 Swagger: http://localhost:${process.env.PORT ?? 3000}/docs`);
 }
 
-bootstrap();
+void bootstrap();

@@ -18,38 +18,65 @@ enum CompanyStatus {
   SUSPENDED
 }
 
-model Company {
-  id        String          @id @default(uuid())
-  name      String
-  email     String          @unique
-  phone     String?
-  status    CompanyStatus   @default(ACTIVE)
+enum ConversationSource {
+  WHATSAPP
+  EMAIL
+  SMS
+  CALL
+  INSTAGRAM
+  FACEBOOK
+}
 
-  users     User[]
+enum ConversationStatus {
+  PENDING
+  ANALYZED
+  ARCHIVED
+}
+
+enum MessageSender {
+  CLIENT
+  COMPANY
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Company {
+  id     String        @id @default(uuid())
+  name   String
+  email  String        @unique
+  phone  String?
+  status CompanyStatus @default(ACTIVE)
+
+  users         User[]
+  conversations Conversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Role {
-  id          String @id @default(uuid())
-  name        String @unique
+  id          String  @id @default(uuid())
+  name        String  @unique
   description String?
 
   users User[]
 }
 
 model User {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  companyId   String
-  roleId      String
+  companyId String
+  roleId    String
 
-  name        String
-  email       String   @unique
-  password    String
+  name     String
+  email    String @unique
+  password String
 
-  lastLogin   DateTime?
+  lastLogin DateTime?
 
   company Company @relation(fields: [companyId], references: [id])
   role    Role    @relation(fields: [roleId], references: [id])
@@ -59,4 +86,79 @@ model User {
 
   @@index([companyId])
   @@index([roleId])
+}
+
+model Conversation {
+  id String @id @default(uuid())
+
+  companyId String
+
+  source ConversationSource @default(WHATSAPP)
+
+  contactName String?
+
+  contactIdentifier String
+
+  status ConversationStatus @default(PENDING)
+
+  lastMessageAt DateTime?
+
+  lastAnalyzedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  messages Message[]
+
+  analysis Analysis?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([contactIdentifier])
+}
+
+model Analysis {
+  id String @id @default(uuid())
+
+  conversationId String @unique
+
+  riskLevel RiskLevel
+
+  score Int
+
+  summary String
+
+  reasons Json
+
+  recommendations Json
+
+  provider String
+
+  modelName String
+
+  engineVersion String
+
+  analyzedAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+}
+
+model Message {
+  id String @id @default(uuid())
+
+  conversationId String
+
+  sender MessageSender
+
+  content String
+
+  sentAt DateTime
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([sentAt])
 }
