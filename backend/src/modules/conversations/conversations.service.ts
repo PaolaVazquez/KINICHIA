@@ -3,10 +3,14 @@ import { Injectable } from '@nestjs/common';
 import { ImportConversationDto } from './dto/import-conversation.dto';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../database/prisma.service';
+import { AnalysisService } from '../analysis/analysis.service';
 
 @Injectable()
 export class ConversationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analysisService: AnalysisService,
+  ) {}
   async importConversation(user: JwtPayload, dto: ImportConversationDto) {
     let conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -48,6 +52,7 @@ export class ConversationsService {
           : new Date(),
       },
     });
+    this.analysisService.scheduleAnalysis(conversation.id);
 
     return {
       message: 'Conversación preparada correctamente.',
