@@ -26,6 +26,28 @@ export class ConversationsService {
         },
       });
     }
+    for (const message of dto.messages) {
+      await this.prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          sender: message.sender,
+          content: message.content,
+          sentAt: message.sentAt ? new Date(message.sentAt) : new Date(),
+        },
+      });
+    }
+    const lastMessage = dto.messages.at(-1);
+
+    await this.prisma.conversation.update({
+      where: {
+        id: conversation.id,
+      },
+      data: {
+        lastMessageAt: lastMessage?.sentAt
+          ? new Date(lastMessage.sentAt)
+          : new Date(),
+      },
+    });
 
     return {
       message: 'Conversación preparada correctamente.',
