@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { ImportConversationDto } from './dto/import-conversation.dto';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -58,5 +58,31 @@ export class ConversationsService {
       message: 'Conversación preparada correctamente.',
       conversation,
     };
+  }
+
+  async findAll(user: JwtPayload) {
+    return this.prisma.conversation.findMany({
+      where: {
+        companyId: user.companyId,
+      },
+      orderBy: {
+        lastMessageAt: 'desc',
+      },
+    });
+  }
+
+  async findOne(id: string, user: JwtPayload) {
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        id,
+        companyId: user.companyId,
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversación no encontrada.');
+    }
+
+    return conversation;
   }
 }

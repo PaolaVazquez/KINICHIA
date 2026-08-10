@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseGuards, Param } from '@nestjs/common';
 
 import { ConversationsService } from './conversations.service';
 import { ImportConversationDto } from './dto/import-conversation.dto';
@@ -6,7 +6,6 @@ import { ImportConversationDto } from './dto/import-conversation.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -23,5 +22,19 @@ export class ConversationsController {
     @Body() dto: ImportConversationDto,
   ) {
     return this.conversationsService.importConversation(user, dto);
+  }
+
+  @Get()
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  getConversations(@CurrentUser() user: JwtPayload) {
+    return this.conversationsService.findAll(user);
+  }
+
+  @Get(':id')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  getConversation(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.conversationsService.findOne(id, user);
   }
 }

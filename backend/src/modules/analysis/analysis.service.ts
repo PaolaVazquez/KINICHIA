@@ -5,12 +5,16 @@ import { PrismaService } from '../../database/prisma.service';
 import type { AnalysisContext } from './types/analysis-context.type';
 
 import type { AnalysisResult } from './interfaces/analysis-result.interface';
+import { RuleBasedAnalyzer } from './analyzers/rule-based.analyzer';
 
 @Injectable()
 export class AnalysisService {
   private pendingAnalyses = new Map<string, ReturnType<typeof setTimeout>>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyzer: RuleBasedAnalyzer,
+  ) {}
 
   scheduleAnalysis(conversationId: string) {
     const existingTimer = this.pendingAnalyses.get(conversationId);
@@ -56,7 +60,7 @@ export class AnalysisService {
 
     const context = this.buildAnalysisContext(conversation);
 
-    const result = this.generateMockAnalysis(context);
+    const result = await this.analyzer.analyze(context);
 
     console.log('🛡️ Resultado del análisis:', result);
 
@@ -66,8 +70,8 @@ export class AnalysisService {
         riskLevel: result.riskLevel,
         score: result.score,
         summary: result.summary,
-        reasons: result.reasons,
-        recommendations: result.recommendations,
+        reasons: result.signals.map((signal) => signal.evidence),
+        recommendations: result.signals.map((signal) => signal.recommendation),
         provider: 'MOCK',
         modelName: 'mock-analysis',
         engineVersion: '1.0.0',
@@ -102,16 +106,6 @@ export class AnalysisService {
         content: message.content,
         sentAt: message.sentAt,
       })),
-    };
-  }
-
-  private generateMockAnalysis(context: AnalysisContext): AnalysisResult {
-    return {
-      riskLevel: 'LOW',
-      score: 10,
-      summary: `Análisis de prueba de la conversación por ${context.source}.`,
-      reasons: [],
-      recommendations: [],
     };
   }
 }
