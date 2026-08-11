@@ -77,6 +77,14 @@ export class ConversationsService {
         id,
         companyId: user.companyId,
       },
+      include: {
+        messages: {
+          orderBy: {
+            sentAt: 'asc',
+          },
+        },
+        analysis: true,
+      },
     });
 
     if (!conversation) {
