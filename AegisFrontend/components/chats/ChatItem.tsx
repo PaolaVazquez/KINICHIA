@@ -38,7 +38,7 @@ export default function ChatItem({
   onPress,
 }: Props) {
   return (
-    <Pressable style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
       {/* Avatar */}
 
       <View style={styles.avatarContainer}>

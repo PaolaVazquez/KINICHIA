@@ -8,24 +8,52 @@ import Input from "@/components/ui/Input";
 import { router } from "expo-router";
 
 import { Colors, Fonts } from "@/constants";
+
+import { login } from "@/services/auth";
 import AlertMessage from "../ui/AlertMessage";
 
 export default function LoginForm() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const goToHome = () => {
-    router.push("/Home");
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      await login(email, password);
+
+      router.replace("/Home");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "No se pudo iniciar sesión.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <View style={styles.container}>
-      <AlertMessage type="error" message="Correo o contraseña incorrectos." />
-      <Input label="Correo" placeholder="correo@email.com" leftIcon="mail" />
+      {/*<AlertMessage type="error" message="Correo o contraseña incorrectos." />*/}
+      {error ? <AlertMessage type="error" message={error} /> : null}
+      <Input
+        label="Correo"
+        placeholder="correo@email.com"
+        leftIcon="mail"
+        value={email}
+        onChangeText={setEmail}
+      />
 
       <Input
         label="Contraseña"
         placeholder="********"
         leftIcon="lock"
         secureTextEntry
+        value={password}
+        onChangeText={setPassword}
       />
 
       <View style={styles.optionsRow}>
@@ -45,7 +73,10 @@ export default function LoginForm() {
         </Pressable>
       </View>
 
-      <Button title="Iniciar sesión" onPress={goToHome} />
+      <Button
+        title={loading ? "Iniciando sesión..." : "Iniciar sesión"}
+        onPress={handleLogin}
+      />
     </View>
   );
 }

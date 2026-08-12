@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
 
     fontFamily: Fonts.medium,
+    color: Colors.aqua,
   },
   inputContainer: {
     flexDirection: "row",

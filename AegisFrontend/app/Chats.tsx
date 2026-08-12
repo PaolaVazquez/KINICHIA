@@ -1,3 +1,5 @@
+import { router } from "expo-router";
+
 import ChatItem from "@/components/chats/ChatItem";
 import AppLayout from "@/components/layout/AppLayout";
 import SideMenu from "@/components/menu/SideMenu";
@@ -81,6 +83,9 @@ export default function Chat() {
         categoryColor="#5B2AAE"
         time="9:41 AM"
         unread={1}
+        onPress={() =>
+          router.push("/conversation/7f15aeac-d480-449a-9b18-d86e56ed00c1")
+        }
       />
     </AppLayout>
   );
