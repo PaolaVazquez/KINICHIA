@@ -84,7 +84,7 @@ export default function Chat() {
         time="9:41 AM"
         unread={1}
         onPress={() =>
-          router.push("/conversation/7f15aeac-d480-449a-9b18-d86e56ed00c1")
+          router.push("/conversation/b3686227-b349-45ba-b4db-80ce08fb9b46")
         }
       />
     </AppLayout>

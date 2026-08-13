@@ -80,7 +80,13 @@ export default function ConversationScreen() {
       </View>
     );
   }
-
+  const latestAnalysis =
+    conversation.analysis.length > 0
+      ? [...conversation.analysis].sort(
+          (a, b) =>
+            new Date(b.analyzedAt).getTime() - new Date(a.analyzedAt).getTime(),
+        )[0]
+      : null;
   return (
     <View style={styles.container}>
       {/* HEADER */}
@@ -97,6 +103,44 @@ export default function ConversationScreen() {
       </View>
 
       <View style={styles.divider} />
+      {latestAnalysis && (
+        <View style={styles.analysisBanner}>
+          <View style={styles.analysisHeader}>
+            <View>
+              <Text style={styles.analysisLabel}>🛡️ ANÁLISIS DE SEGURIDAD</Text>
+
+              <Text style={styles.analysisSummary}>
+                {latestAnalysis.summary}
+              </Text>
+            </View>
+
+            <View style={styles.scoreContainer}>
+              <Text style={styles.score}>{latestAnalysis.score}</Text>
+
+              <Text style={styles.scoreLabel}>/100</Text>
+            </View>
+          </View>
+
+          <View style={styles.riskRow}>
+            <View
+              style={[
+                styles.riskBadge,
+                latestAnalysis.riskLevel === "HIGH" && styles.highRisk,
+                latestAnalysis.riskLevel === "MEDIUM" && styles.mediumRisk,
+                latestAnalysis.riskLevel === "LOW" && styles.lowRisk,
+              ]}
+            >
+              <Text style={styles.riskText}>
+                RIESGO {latestAnalysis.riskLevel}
+              </Text>
+            </View>
+
+            <Text style={styles.signalCount}>
+              {latestAnalysis.reasons.length} señales detectadas
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* MENSAJES */}
       <ScrollView
@@ -253,5 +297,88 @@ const styles = StyleSheet.create({
     color: "white",
     fontFamily: Fonts.medium,
     textAlign: "center",
+  },
+  analysisBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 15,
+    borderRadius: 16,
+    backgroundColor: "#1C242D",
+    borderWidth: 1,
+    borderColor: Colors.bordersInput,
+  },
+
+  analysisHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  analysisLabel: {
+    color: Colors.aqua,
+    fontFamily: Fonts.heavy,
+    fontSize: 11,
+  },
+
+  analysisSummary: {
+    color: "#A9B7C6",
+    fontFamily: Fonts.regular,
+    fontSize: 10,
+    marginTop: 5,
+  },
+
+  scoreContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+
+  score: {
+    color: "white",
+    fontFamily: Fonts.heavy,
+    fontSize: 24,
+  },
+
+  scoreLabel: {
+    color: "#A9B7C6",
+    fontFamily: Fonts.regular,
+    fontSize: 10,
+  },
+
+  riskRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    gap: 10,
+  },
+
+  riskBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+
+  highRisk: {
+    backgroundColor: "#8B2635",
+  },
+
+  mediumRisk: {
+    backgroundColor: "#8B6B26",
+  },
+
+  lowRisk: {
+    backgroundColor: "#26735B",
+  },
+
+  riskText: {
+    color: "white",
+    fontFamily: Fonts.heavy,
+    fontSize: 9,
+  },
+
+  signalCount: {
+    color: "#A9B7C6",
+    fontFamily: Fonts.regular,
+    fontSize: 10,
   },
 });

@@ -27,15 +27,22 @@ export interface AnalysisSignal {
 }
 
 export interface Analysis {
+  id: string;
+  conversationId: string;
   riskLevel: string;
   score: number;
   summary: string;
-  signals: AnalysisSignal[];
+  reasons: string[];
+  recommendations: string[];
+  provider: string;
+  modelName: string;
+  engineVersion: string;
+  analyzedAt: string;
 }
 
 export interface ConversationDetail extends Conversation {
   messages: Message[];
-  analysis: Analysis | null;
+  analysis: Analysis[];
 }
 
 export async function getConversations(): Promise<Conversation[]> {
