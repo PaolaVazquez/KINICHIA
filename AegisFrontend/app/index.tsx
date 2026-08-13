@@ -1,11 +1,10 @@
-import { useVideoPlayer, VideoView } from "expo-video";
-import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 
 import AuthLayout from "@/components/layout/AuthLayout";
-
-
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoaderScreen() {
   const player = useVideoPlayer(
@@ -17,24 +16,26 @@ export default function LoaderScreen() {
     },
   );
 
-useEffect(() => {
-  const timer = setTimeout(() => {
-    router.replace("/Login");
-  }, 2800); // duración de tu video
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace("/Login");
+    }, 2800); // duración de tu video
 
-  return () => clearTimeout(timer);
-}, []);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <AuthLayout contentTop={150} scrollable={false}>
-      <View style={styles.content}>
-        <VideoView
-          player={player}
-          style={styles.video}
-          contentFit="cover"
-          nativeControls={false}
-        />
-      </View>
+      <SafeAreaView>
+        <View style={styles.content}>
+          <VideoView
+            player={player}
+            style={styles.video}
+            contentFit="cover"
+            nativeControls={false}
+          />
+        </View>
+      </SafeAreaView>
     </AuthLayout>
   );
 }

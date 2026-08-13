@@ -1,6 +1,8 @@
 import { useFonts } from "expo-font";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Text, View } from "react-native";
+// este no es el loader
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Loader() {
   const player = useVideoPlayer(
@@ -29,36 +31,38 @@ export default function Loader() {
         alignItems: "center",
       }}
     >
-      <VideoView
-        player={player}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
-        contentFit="cover"
-        nativeControls={false}
-      />
-
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text
+      <SafeAreaView>
+        <VideoView
+          player={player}
           style={{
-            color: "white",
-            fontSize: 40,
-            fontFamily: "NexaBold",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+          contentFit="cover"
+          nativeControls={false}
+        />
+
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          KINICHIA
-        </Text>
-      </View>
+          <Text
+            style={{
+              color: "white",
+              fontSize: 40,
+              fontFamily: "NexaBold",
+            }}
+          >
+            KINICHIA
+          </Text>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }

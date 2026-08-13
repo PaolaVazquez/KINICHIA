@@ -7,21 +7,25 @@ import AppHeader from "@/components/navigation/AppHeader";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { SafeAreaView } from "react-native-safe-area-context";
+
 export default function InspectEmail() {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <AppLayout>
-      <AppHeader onMenuPress={() => setMenuOpen(true)} />
-      {menuOpen && <SideMenu onClose={() => setMenuOpen(false)} />}
+      <SafeAreaView>
+        <AppHeader onMenuPress={() => setMenuOpen(true)} />
+        {menuOpen && <SideMenu onClose={() => setMenuOpen(false)} />}
 
-      <AuthHero
-        title="¡Hola, Paola! 👋"
-        subtitle="Protege tu entorno digital. Analiza correos y detecta amenazas antes de que sea tarde."
-      />
+        <AuthHero
+          title="¡Hola, Paola! 👋"
+          subtitle="Protege tu entorno digital. Analiza correos y detecta amenazas antes de que sea tarde."
+        />
 
-      <EmailInspectionForm />
-      <AnalysisGrid />
-      <View></View>
+        <EmailInspectionForm />
+        <AnalysisGrid />
+        <View></View>
+      </SafeAreaView>
     </AppLayout>
   );
 }

@@ -1,8 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,8 @@ import {
 
 import { Colors, Fonts } from "@/constants";
 import { ConversationDetail, getConversation } from "@/services/conversations";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +26,18 @@ export default function ConversationScreen() {
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
+
+  const [analysisExpanded, setAnalysisExpanded] = useState(false);
+
+  const analysisAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(analysisAnimation, {
+      toValue: analysisExpanded ? 1 : 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  }, [analysisExpanded]);
 
   useEffect(() => {
     if (!id) {
@@ -89,59 +104,126 @@ export default function ConversationScreen() {
       : null;
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color={Colors.aqua} />
-        </Pressable>
+      <SafeAreaView edges={["top"]}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color={Colors.aqua} />
+          </Pressable>
 
-        <View style={styles.headerInfo}>
-          <Text style={styles.name}>{conversation.contactName}</Text>
+          <View style={styles.headerInfo}>
+            <Text style={styles.name}>{conversation.contactName}</Text>
 
-          <Text style={styles.subtitle}>{conversation.source}</Text>
-        </View>
-      </View>
-
-      <View style={styles.divider} />
-      {latestAnalysis && (
-        <View style={styles.analysisBanner}>
-          <View style={styles.analysisHeader}>
-            <View>
-              <Text style={styles.analysisLabel}>🛡️ ANÁLISIS DE SEGURIDAD</Text>
-
-              <Text style={styles.analysisSummary}>
-                {latestAnalysis.summary}
-              </Text>
-            </View>
-
-            <View style={styles.scoreContainer}>
-              <Text style={styles.score}>{latestAnalysis.score}</Text>
-
-              <Text style={styles.scoreLabel}>/100</Text>
-            </View>
+            <Text style={styles.subtitle}>{conversation.source}</Text>
           </View>
+        </View>
 
-          <View style={styles.riskRow}>
-            <View
-              style={[
-                styles.riskBadge,
-                latestAnalysis.riskLevel === "HIGH" && styles.highRisk,
-                latestAnalysis.riskLevel === "MEDIUM" && styles.mediumRisk,
-                latestAnalysis.riskLevel === "LOW" && styles.lowRisk,
-              ]}
+        <View style={styles.divider} />
+        {latestAnalysis && (
+          <View style={styles.analysisBanner}>
+            <Pressable
+              style={styles.analysisHeader}
+              onPress={() => setAnalysisExpanded((prev) => !prev)}
             >
-              <Text style={styles.riskText}>
-                RIESGO {latestAnalysis.riskLevel}
+              <View style={styles.analysisHeaderInfo}>
+                <View style={styles.analysisTitleRow}>
+                  <Text style={styles.analysisLabel}>
+                    🛡️ ANÁLISIS DE SEGURIDAD
+                  </Text>
+
+                  <Feather
+                    name={analysisExpanded ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color={Colors.aqua}
+                  />
+                </View>
+
+                <Text style={styles.analysisSummary}>
+                  {latestAnalysis.summary}
+                </Text>
+              </View>
+
+              <View style={styles.scoreContainer}>
+                <Text style={styles.score}>{latestAnalysis.score}</Text>
+
+                <Text style={styles.scoreLabel}>/100</Text>
+              </View>
+            </Pressable>
+
+            <View style={styles.riskRow}>
+              <View
+                style={[
+                  styles.riskBadge,
+                  latestAnalysis.riskLevel === "HIGH" && styles.highRisk,
+                  latestAnalysis.riskLevel === "MEDIUM" && styles.mediumRisk,
+                  latestAnalysis.riskLevel === "LOW" && styles.lowRisk,
+                ]}
+              >
+                <Text style={styles.riskText}>
+                  RIESGO {latestAnalysis.riskLevel}
+                </Text>
+              </View>
+
+              <Text style={styles.signalCount}>
+                {latestAnalysis.reasons.length} señales detectadas
               </Text>
             </View>
 
-            <Text style={styles.signalCount}>
-              {latestAnalysis.reasons.length} señales detectadas
-            </Text>
-          </View>
-        </View>
-      )}
+            {analysisExpanded && (
+              <Animated.View
+                style={[
+                  styles.expandedAnalysis,
+                  {
+                    opacity: analysisAnimation,
+                    transform: [
+                      {
+                        translateY: analysisAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-8, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <Text style={styles.sectionTitle}>🚨 Señales detectadas</Text>
 
+                {latestAnalysis.reasons.map((reason, index) => (
+                  <View key={`${reason}-${index}`} style={styles.reasonCard}>
+                    <Feather name="alert-triangle" size={16} color="#FFB84D" />
+
+                    <Text style={styles.reasonText}>{reason}</Text>
+                  </View>
+                ))}
+                {latestAnalysis.recommendations.length > 0 && (
+                  <View style={styles.recommendationsSection}>
+                    <Text style={styles.sectionTitle}>💡 Recomendaciones</Text>
+
+                    {latestAnalysis.recommendations.map(
+                      (recommendation, index) => (
+                        <View
+                          key={`${recommendation}-${index}`}
+                          style={styles.recommendationCard}
+                        >
+                          <Feather
+                            name="check-circle"
+                            size={16}
+                            color={Colors.aqua}
+                          />
+
+                          <Text style={styles.recommendationText}>
+                            {recommendation}
+                          </Text>
+                        </View>
+                      ),
+                    )}
+                  </View>
+                )}
+              </Animated.View>
+            )}
+          </View>
+        )}
+      </SafeAreaView>
       {/* MENSAJES */}
       <ScrollView
         style={styles.messagesContainer}
@@ -298,6 +380,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     textAlign: "center",
   },
+
   analysisBanner: {
     marginHorizontal: 16,
     marginTop: 12,
@@ -307,6 +390,48 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C242D",
     borderWidth: 1,
     borderColor: Colors.bordersInput,
+  },
+  analysisHeaderInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+
+  analysisTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  expandedAnalysis: {
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: Colors.bordersInput,
+  },
+
+  sectionTitle: {
+    color: "white",
+    fontFamily: Fonts.heavy,
+    fontSize: 13,
+    marginBottom: 10,
+  },
+
+  reasonCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    backgroundColor: "#252C35",
+  },
+
+  reasonText: {
+    flex: 1,
+    color: "#D7DEE6",
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+    lineHeight: 17,
   },
 
   analysisHeader: {
@@ -380,5 +505,32 @@ const styles = StyleSheet.create({
     color: "#A9B7C6",
     fontFamily: Fonts.regular,
     fontSize: 10,
+  },
+
+  reasonsContainer: {
+    marginHorizontal: 16,
+    marginTop: 10,
+  },
+
+  recommendationsSection: {
+    marginTop: 10,
+  },
+
+  recommendationCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    backgroundColor: "#202A32",
+  },
+
+  recommendationText: {
+    flex: 1,
+    color: "#D7DEE6",
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+    lineHeight: 17,
   },
 });

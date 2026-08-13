@@ -12,48 +12,50 @@ import AuthCard from "@/components/auth/AuthCard";
 import AuthTabs from "@/components/auth/AuthTabs";
 import AuthLayout from "@/components/layout/AuthLayout";
 
+import { SafeAreaView } from "react-native-safe-area-context";
+
 export default function Login() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [rememberMe, setRememberMe] = useState(false);
 
-
-
   return (
-    <AuthLayout contentTop={150} scrollable={true}>
-      <View
-        style={{
-          zIndex: 3,
-        }}
-      >
-        <AuthHero
-          title="Bienvenido de nuevo"
-          subtitle="Inicia sesión para seguir protegiendo tu entorno digital"
-        />
-        <AuthCard>
-          <AuthTabs activeTab={activeTab} onChange={setActiveTab} />
+    <SafeAreaView edges={["top", "bottom"]}>
+      <AuthLayout contentTop={150} scrollable={true}>
+        <View
+          style={{
+            zIndex: 3,
+          }}
+        >
+          <AuthHero
+            title="Bienvenido de nuevo"
+            subtitle="Inicia sesión para seguir protegiendo tu entorno digital"
+          />
+          <AuthCard>
+            <AuthTabs activeTab={activeTab} onChange={setActiveTab} />
 
-          {activeTab === "login" ? <LoginForm /> : <RegisterForm />}
-          <SocialLogin />
-        </AuthCard>
-        <View style={styles.bottomContainer}>
-          <Text style={styles.bottomText}>
-            {activeTab === "login"
-              ? "¿No tienes cuenta?"
-              : "¿Ya tienes una cuenta?"}
-          </Text>
-
-          <Pressable
-            onPress={() =>
-              setActiveTab(activeTab === "login" ? "register" : "login")
-            }
-          >
-            <Text style={styles.bottomLink}>
-              {activeTab === "login" ? "Crear cuenta" : "Inicia sesión"}
+            {activeTab === "login" ? <LoginForm /> : <RegisterForm />}
+            <SocialLogin />
+          </AuthCard>
+          <View style={styles.bottomContainer}>
+            <Text style={styles.bottomText}>
+              {activeTab === "login"
+                ? "¿No tienes cuenta?"
+                : "¿Ya tienes una cuenta?"}
             </Text>
-          </Pressable>
+
+            <Pressable
+              onPress={() =>
+                setActiveTab(activeTab === "login" ? "register" : "login")
+              }
+            >
+              <Text style={styles.bottomLink}>
+                {activeTab === "login" ? "Crear cuenta" : "Inicia sesión"}
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
-    </AuthLayout>
+      </AuthLayout>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
