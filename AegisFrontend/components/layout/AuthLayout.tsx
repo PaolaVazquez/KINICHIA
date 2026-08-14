@@ -12,7 +12,6 @@ import {
 type AuthLayoutProps = {
   children: ReactNode;
   contentTop?: number;
-
   scrollable?: boolean;
   logoTop?: number;
 };
@@ -46,7 +45,14 @@ export default function AuthLayout({
       </View>
 
       {/* Logo */}
-      <View style={styles.brandContainer}>
+      <View
+        style={[
+          styles.brandContainer,
+          {
+            top: logoTop,
+          },
+        ]}
+      >
         <Text style={styles.brand}>
           KINCH<Text style={styles.brandHighlight}>IA</Text>
         </Text>
@@ -124,8 +130,6 @@ const styles = StyleSheet.create({
   },
   brandContainer: {
     position: "absolute",
-
-    top: 30,
 
     width: "100%",
 

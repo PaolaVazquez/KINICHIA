@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Get, UseGuards, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  UseGuards,
+  Param,
+  Query,
+} from '@nestjs/common';
 
 import { ConversationsService } from './conversations.service';
 import { ImportConversationDto } from './dto/import-conversation.dto';
@@ -8,7 +16,7 @@ import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 @Controller('conversations')
 export class ConversationsController {
@@ -26,9 +34,18 @@ export class ConversationsController {
 
   @Get()
   @ApiBearerAuth('JWT-auth')
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Busca por nombre, número o contenido de los mensajes',
+  })
   @UseGuards(JwtAuthGuard)
-  getConversations(@CurrentUser() user: JwtPayload) {
-    return this.conversationsService.findAll(user);
+  getConversations(
+    @CurrentUser() user: JwtPayload,
+    @Query('search') search?: string,
+  ) {
+    return this.conversationsService.findAll(user, search);
   }
 
   @Get(':id')

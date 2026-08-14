@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
 import AuthLayout from "@/components/layout/AuthLayout";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoaderScreen() {
   const player = useVideoPlayer(
@@ -25,17 +24,15 @@ export default function LoaderScreen() {
   }, []);
 
   return (
-    <AuthLayout contentTop={150} scrollable={false}>
-      <SafeAreaView>
-        <View style={styles.content}>
-          <VideoView
-            player={player}
-            style={styles.video}
-            contentFit="cover"
-            nativeControls={false}
-          />
-        </View>
-      </SafeAreaView>
+    <AuthLayout contentTop={150} logoTop={65} scrollable={false}>
+      <View style={styles.content}>
+        <VideoView
+          player={player}
+          style={styles.video}
+          contentFit="cover"
+          nativeControls={false}
+        />
+      </View>
     </AuthLayout>
   );
 }

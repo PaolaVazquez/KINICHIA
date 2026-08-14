@@ -60,15 +60,68 @@ export class ConversationsService {
     };
   }
 
-  async findAll(user: JwtPayload) {
-    return this.prisma.conversation.findMany({
+  async findAll(user: JwtPayload, search?: string) {
+    const normalizedSearch = search?.trim();
+
+    const conversations = await this.prisma.conversation.findMany({
       where: {
         companyId: user.companyId,
+
+        ...(normalizedSearch
+          ? {
+              OR: [
+                {
+                  contactName: {
+                    contains: normalizedSearch,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  contactIdentifier: {
+                    contains: normalizedSearch,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  messages: {
+                    some: {
+                      content: {
+                        contains: normalizedSearch,
+                        mode: 'insensitive',
+                      },
+                    },
+                  },
+                },
+              ],
+            }
+          : {}),
       },
+
+      include: {
+        messages: {
+          orderBy: {
+            sentAt: 'desc',
+          },
+          take: 1,
+        },
+      },
+
       orderBy: {
         lastMessageAt: 'desc',
       },
     });
+
+    return conversations.map((conversation) => ({
+      id: conversation.id,
+      companyId: conversation.companyId,
+      source: conversation.source,
+      contactName: conversation.contactName,
+      contactIdentifier: conversation.contactIdentifier,
+      status: conversation.status,
+      lastMessageAt: conversation.lastMessageAt,
+      lastAnalyzedAt: conversation.lastAnalyzedAt,
+      lastMessage: conversation.messages[0]?.content ?? null,
+    }));
   }
 
   async findOne(id: string, user: JwtPayload) {

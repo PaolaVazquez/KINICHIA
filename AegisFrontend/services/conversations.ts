@@ -7,6 +7,7 @@ export interface Conversation {
   contactName: string;
   contactIdentifier: string;
   status: string;
+  lastMessage: string | null;
   lastMessageAt: string | null;
   lastAnalyzedAt: string | null;
 }
@@ -45,10 +46,16 @@ export interface ConversationDetail extends Conversation {
   analysis: Analysis[];
 }
 
-export async function getConversations(): Promise<Conversation[]> {
-  return apiFetch("/conversations");
+export async function getConversations(
+  search?: string,
+): Promise<Conversation[]> {
+  const query = search?.trim()
+    ? `?search=${encodeURIComponent(search.trim())}`
+    : "";
+
+  return apiFetch<Conversation[]>(`/conversations${query}`);
 }
 
 export async function getConversation(id: string): Promise<ConversationDetail> {
-  return apiFetch(`/conversations/${id}`);
+  return apiFetch<ConversationDetail>(`/conversations/${id}`);
 }

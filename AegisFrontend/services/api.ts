@@ -1,10 +1,17 @@
 import { getToken } from "./storage";
 
-//const API_URL = "http://192.168.100.65:3000/api";
+//red casa
 
-const API_URL = "http://172.20.10.2:3000/api";
+const API_URL = "http://192.168.100.65:3000/api";
 
-export async function apiFetch(endpoint: string, options: RequestInit = {}) {
+//Datos iphone
+
+//const API_URL = "http://172.20.10.2:3000/api";
+
+export async function apiFetch<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
   const token = await getToken();
 
   const response = await fetch(`${API_URL}${endpoint}`, {

@@ -1,4 +1,6 @@
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import ChatItem from "@/components/chats/ChatItem";
 import AppLayout from "@/components/layout/AppLayout";
@@ -7,26 +9,86 @@ import AppHeader from "@/components/navigation/AppHeader";
 
 import Input from "@/components/ui/Input";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import { Colors, Dimensions, Spacing } from "@/constants";
+import { Colors, Dimensions, Fonts, Spacing } from "@/constants";
 import { Feather } from "@expo/vector-icons";
-import { useState } from "react";
-import { StyleSheet } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { Conversation, getConversations } from "@/services/conversations";
 
 export default function Chat() {
   const [menuOpen, setMenuOpen] = useState(false);
+
   const [filter, setFilter] = useState("all");
+
+  const [search, setSearch] = useState("");
+
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getConversations(search);
+
+        console.log("💬 Conversaciones recuperadas:", data);
+
+        setConversations(data);
+      } catch (error) {
+        console.error("❌ Error recuperando conversaciones:", error);
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar las conversaciones.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [search]);
+
+  const formatTime = (date: string | null) => {
+    if (!date) {
+      return "";
+    }
+
+    return new Date(date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const filteredConversations = conversations.filter((conversation) => {
+    if (filter === "active") {
+      return conversation.status === "PENDING";
+    }
+
+    if (filter === "resolved") {
+      return conversation.status === "RESOLVED";
+    }
+
+    return true;
+  });
+
   return (
     <AppLayout
       overlay={menuOpen && <SideMenu onClose={() => setMenuOpen(false)} />}
     >
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <AppHeader onMenuPress={() => setMenuOpen(true)} />
 
         <Input
           placeholder="Buscar conversaciones..."
           leftIcon="search"
+          value={search}
+          onChangeText={setSearch}
           style={{
             marginTop: Spacing.xl,
             marginBottom: Spacing.lg,
@@ -55,53 +117,93 @@ export default function Chat() {
             {
               label: "Todos",
               value: "all",
-              count: 12,
+              count: conversations.length,
             },
-
             {
               label: "Activos",
               value: "active",
-              count: 5,
+              count: conversations.filter(
+                (conversation) => conversation.status === "PENDING",
+              ).length,
             },
-
             {
               label: "Amenazas",
               value: "threats",
-              count: 3,
+              count: 0,
             },
-
             {
               label: "Resueltos",
               value: "resolved",
-              count: 4,
+              count: conversations.filter(
+                (conversation) => conversation.status === "RESOLVED",
+              ).length,
             },
           ]}
         />
 
-        <ChatItem
-          avatar={require("../assets/images/icono-profile.png")}
-          name="María González"
-          message="Hola, necesito información sobre..."
-          category="Clientes"
-          categoryColor="#5B2AAE"
-          time="9:41 AM"
-          unread={1}
-          onPress={() =>
-            router.push("/conversation/b3686227-b349-45ba-b4db-80ce08fb9b46")
-          }
-        />
+        {loading && (
+          <View style={styles.stateContainer}>
+            <ActivityIndicator size="small" color={Colors.aqua} />
+
+            <Text style={styles.stateText}>Cargando conversaciones...</Text>
+          </View>
+        )}
+
+        {!loading && error !== "" && (
+          <View style={styles.stateContainer}>
+            <Feather name="alert-circle" size={30} color="#FF6B6B" />
+
+            <Text style={styles.stateText}>{error}</Text>
+          </View>
+        )}
+
+        {!loading && error === "" && filteredConversations.length === 0 && (
+          <View style={styles.stateContainer}>
+            <Feather name="message-circle" size={32} color={Colors.aqua} />
+
+            <Text style={styles.stateText}>
+              No hay conversaciones para mostrar.
+            </Text>
+          </View>
+        )}
+
+        {!loading &&
+          error === "" &&
+          filteredConversations.map((conversation) => (
+            <ChatItem
+              key={conversation.id}
+              avatar={require("../assets/images/icono-profile.png")}
+              name={conversation.contactName || "Contacto desconocido"}
+              message={conversation.lastMessage || "Sin mensajes"}
+              category="Clientes"
+              categoryColor="#5B2AAE"
+              time={formatTime(conversation.lastMessageAt)}
+              unread={undefined}
+              onPress={() => router.push(`/conversation/${conversation.id}`)}
+            />
+          ))}
       </SafeAreaView>
     </AppLayout>
   );
 }
+
 const styles = StyleSheet.create({
-  quickActions: {
-    flexDirection: "row",
+  safeArea: {
+    flex: 1,
+  },
 
-    gap: 15,
+  stateContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 30,
+    gap: 12,
+  },
 
-    marginTop: 20,
-
-    paddingHorizontal: 20,
+  stateText: {
+    color: "#A9B7C6",
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    textAlign: "center",
   },
 });
