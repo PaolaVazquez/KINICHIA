@@ -65,6 +65,12 @@ export default function Chat() {
     });
   };
 
+  const formatSearchTime = (date: string) => {
+    return new Date(date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
   const filteredConversations = conversations.filter((conversation) => {
     if (filter === "active") {
       return conversation.status === "PENDING";
@@ -169,6 +175,7 @@ export default function Chat() {
 
         {!loading &&
           error === "" &&
+          search.trim() === "" &&
           filteredConversations.map((conversation) => (
             <ChatItem
               key={conversation.id}
@@ -182,6 +189,37 @@ export default function Chat() {
               onPress={() => router.push(`/conversation/${conversation.id}`)}
             />
           ))}
+
+        {!loading && error === "" && search.trim() !== "" && (
+          <View style={styles.searchResultsContainer}>
+            <Text style={styles.searchResultsTitle}>
+              Resultados para: {search.trim()}
+            </Text>
+
+            {filteredConversations.flatMap((conversation) =>
+              conversation.searchMatches.map((match) => (
+                <View
+                  key={`${conversation.id}-${match.id}`}
+                  style={styles.searchResult}
+                >
+                  <View style={styles.searchResultHeader}>
+                    <Text style={styles.searchResultName}>
+                      {conversation.contactName || "Contacto desconocido"}
+                    </Text>
+
+                    <Text style={styles.searchResultTime}>
+                      {formatSearchTime(match.sentAt)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.searchResultMessage}>
+                    {match.content}
+                  </Text>
+                </View>
+              )),
+            )}
+          </View>
+        )}
       </SafeAreaView>
     </AppLayout>
   );
@@ -205,5 +243,53 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 13,
     textAlign: "center",
+  },
+
+  searchResultsContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+
+  searchResultsTitle: {
+    color: "white",
+    fontFamily: Fonts.bold,
+    fontSize: 14,
+    marginBottom: 12,
+  },
+
+  searchResult: {
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    borderRadius: 14,
+    backgroundColor: "#1C242D",
+    borderWidth: 1,
+    borderColor: Colors.bordersInput,
+  },
+
+  searchResultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
+  searchResultName: {
+    color: Colors.aqua,
+    fontFamily: Fonts.bold,
+    fontSize: 13,
+  },
+
+  searchResultTime: {
+    color: "#A9B7C6",
+    fontFamily: Fonts.regular,
+    fontSize: 9,
+  },
+
+  searchResultMessage: {
+    color: "white",
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

@@ -111,17 +111,62 @@ export class ConversationsService {
       },
     });
 
-    return conversations.map((conversation) => ({
-      id: conversation.id,
-      companyId: conversation.companyId,
-      source: conversation.source,
-      contactName: conversation.contactName,
-      contactIdentifier: conversation.contactIdentifier,
-      status: conversation.status,
-      lastMessageAt: conversation.lastMessageAt,
-      lastAnalyzedAt: conversation.lastAnalyzedAt,
-      lastMessage: conversation.messages[0]?.content ?? null,
-    }));
+    // Si no estamos buscando, devolvemos la respuesta normal.
+    if (!normalizedSearch) {
+      return conversations.map((conversation) => ({
+        id: conversation.id,
+        companyId: conversation.companyId,
+        source: conversation.source,
+        contactName: conversation.contactName,
+        contactIdentifier: conversation.contactIdentifier,
+        status: conversation.status,
+        lastMessageAt: conversation.lastMessageAt,
+        lastAnalyzedAt: conversation.lastAnalyzedAt,
+        lastMessage: conversation.messages[0]?.content ?? null,
+        searchMatches: [],
+      }));
+    }
+
+    // Buscamos hasta 5 mensajes que coincidan
+    // dentro de cada conversación encontrada.
+    const conversationsWithMatches = await Promise.all(
+      conversations.map(async (conversation) => {
+        const searchMatches = await this.prisma.message.findMany({
+          where: {
+            conversationId: conversation.id,
+            content: {
+              contains: normalizedSearch,
+              mode: 'insensitive',
+            },
+          },
+          orderBy: {
+            sentAt: 'desc',
+          },
+          take: 5,
+          select: {
+            id: true,
+            content: true,
+            sender: true,
+            sentAt: true,
+          },
+        });
+
+        return {
+          id: conversation.id,
+          companyId: conversation.companyId,
+          source: conversation.source,
+          contactName: conversation.contactName,
+          contactIdentifier: conversation.contactIdentifier,
+          status: conversation.status,
+          lastMessageAt: conversation.lastMessageAt,
+          lastAnalyzedAt: conversation.lastAnalyzedAt,
+          lastMessage: conversation.messages[0]?.content ?? null,
+          searchMatches,
+        };
+      }),
+    );
+
+    return conversationsWithMatches;
   }
 
   async findOne(id: string, user: JwtPayload) {

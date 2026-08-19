@@ -1,5 +1,12 @@
 import { apiFetch } from "./api";
 
+export interface SearchMatch {
+  id: string;
+  content: string;
+  sender: string;
+  sentAt: string;
+}
+
 export interface Conversation {
   id: string;
   companyId: string;
@@ -10,6 +17,7 @@ export interface Conversation {
   lastMessage: string | null;
   lastMessageAt: string | null;
   lastAnalyzedAt: string | null;
+  searchMatches: SearchMatch[];
 }
 
 export interface Message {
