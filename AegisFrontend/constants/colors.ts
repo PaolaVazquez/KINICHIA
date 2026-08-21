@@ -5,6 +5,8 @@ export const Colors = {
 
   aqua: "#24C3DC",
 
+  aquaTransparent: "rgba(36, 195, 220, 0.85)",
+
   lightblue: "#052363",
 
   green: "#5AF0C8",
@@ -20,7 +22,7 @@ export const Colors = {
   backgroundIcon: "#052467",
 
   white: "#fffff",
-  
+
   black: "#00000",
 
   success: "#15A06E",

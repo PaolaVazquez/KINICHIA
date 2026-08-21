@@ -17,7 +17,10 @@ import { ConversationDetail, getConversation } from "@/services/conversations";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ConversationScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, messageId } = useLocalSearchParams<{
+    id: string;
+    messageId?: string;
+  }>();
 
   const [conversation, setConversation] = useState<ConversationDetail | null>(
     null,
@@ -26,6 +29,14 @@ export default function ConversationScreen() {
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const hasScrolledToMessage = useRef(false);
+
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    string | null
+  >(null);
 
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
 
@@ -69,6 +80,15 @@ export default function ConversationScreen() {
 
     loadConversation();
   }, [id]);
+  useEffect(() => {
+    hasScrolledToMessage.current = false;
+
+    if (messageId) {
+      setHighlightedMessageId(messageId);
+    } else {
+      setHighlightedMessageId(null);
+    }
+  }, [messageId]);
 
   if (loading) {
     return (
@@ -226,6 +246,7 @@ export default function ConversationScreen() {
       </SafeAreaView>
       {/* MENSAJES */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.messagesContainer}
         contentContainerStyle={styles.messagesContent}
       >
@@ -240,9 +261,32 @@ export default function ConversationScreen() {
             return (
               <View
                 key={message.id}
+                onLayout={(event) => {
+                  if (
+                    messageId === message.id &&
+                    !hasScrolledToMessage.current
+                  ) {
+                    const { y } = event.nativeEvent.layout;
+
+                    hasScrolledToMessage.current = true;
+
+                    setTimeout(() => {
+                      scrollViewRef.current?.scrollTo({
+                        y: Math.max(0, y - 100),
+                        animated: true,
+                      });
+                    }, 150);
+
+                    setTimeout(() => {
+                      setHighlightedMessageId(null);
+                    }, 2500);
+                  }
+                }}
                 style={[
                   styles.messageBubble,
                   isClient ? styles.clientMessage : styles.companyMessage,
+                  highlightedMessageId === message.id &&
+                    styles.highlightedMessage,
                 ]}
               >
                 <Text
@@ -341,7 +385,7 @@ const styles = StyleSheet.create({
 
   companyMessage: {
     alignSelf: "flex-end",
-    backgroundColor: Colors.aqua,
+    backgroundColor: Colors.aquaTransparent,
     borderBottomRightRadius: 4,
   },
 
@@ -532,5 +576,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 11,
     lineHeight: 17,
+  },
+
+  highlightedMessage: {
+    borderWidth: 2,
+    borderColor: Colors.blue,
+    shadowColor: Colors.blue,
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });

@@ -1,6 +1,12 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import ChatItem from "@/components/chats/ChatItem";
 import AppLayout from "@/components/layout/AppLayout";
@@ -198,9 +204,18 @@ export default function Chat() {
 
             {filteredConversations.flatMap((conversation) =>
               conversation.searchMatches.map((match) => (
-                <View
+                <Pressable
                   key={`${conversation.id}-${match.id}`}
                   style={styles.searchResult}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/conversation/[id]",
+                      params: {
+                        id: conversation.id,
+                        messageId: match.id,
+                      },
+                    })
+                  }
                 >
                   <View style={styles.searchResultHeader}>
                     <Text style={styles.searchResultName}>
@@ -215,7 +230,7 @@ export default function Chat() {
                   <Text style={styles.searchResultMessage}>
                     {match.content}
                   </Text>
-                </View>
+                </Pressable>
               )),
             )}
           </View>
