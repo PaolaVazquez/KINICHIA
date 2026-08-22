@@ -10,6 +10,8 @@ import { RolesModule } from './modules/roles/roles.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 
+import { UrlAnalysisModule } from './modules/url-analysis/url-analysis.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -30,6 +32,8 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
     ConversationsModule,
 
     AnalysisModule,
+
+    UrlAnalysisModule,
   ],
   controllers: [AppController],
   providers: [AppService],
