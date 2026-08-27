@@ -40,12 +40,19 @@ export class ConversationsController {
     type: String,
     description: 'Busca por nombre, número o contenido de los mensajes',
   })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    type: String,
+    description: 'Filtra las conversaciones por estado o nivel de riesgo',
+  })
   @UseGuards(JwtAuthGuard)
   getConversations(
     @CurrentUser() user: JwtPayload,
     @Query('search') search?: string,
+    @Query('filter') filter?: string,
   ) {
-    return this.conversationsService.findAll(user, search);
+    return this.conversationsService.findAll(user, search, filter);
   }
 
   @Get(':id')

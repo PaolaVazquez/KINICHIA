@@ -1,5 +1,15 @@
 import { apiFetch } from "./api";
 
+export interface UrlAnalysis {
+  url: string;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH";
+  score: number;
+  signals: string[];
+  recommendations: string[];
+  domain: string | null;
+  protocol: string | null;
+}
+
 export interface SearchMatch {
   id: string;
   content: string;
@@ -25,6 +35,8 @@ export interface Message {
   sender: "CLIENT" | "COMPANY";
   content: string;
   sentAt: string;
+  urls: string[];
+  urlAnalysis: UrlAnalysis[];
 }
 
 export interface AnalysisSignal {
@@ -56,12 +68,21 @@ export interface ConversationDetail extends Conversation {
 
 export async function getConversations(
   search?: string,
+  filter?: string,
 ): Promise<Conversation[]> {
-  const query = search?.trim()
-    ? `?search=${encodeURIComponent(search.trim())}`
-    : "";
+  const params = new URLSearchParams();
 
-  return apiFetch<Conversation[]>(`/conversations${query}`);
+  if (search?.trim()) {
+    params.append("search", search.trim());
+  }
+
+  if (filter && filter !== "all") {
+    params.append("filter", filter);
+  }
+
+  const query = params.toString();
+
+  return apiFetch<Conversation[]>(`/conversations${query ? `?${query}` : ""}`);
 }
 
 export async function getConversation(id: string): Promise<ConversationDetail> {

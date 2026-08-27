@@ -4,12 +4,17 @@ import { ImportConversationDto } from './dto/import-conversation.dto';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../database/prisma.service';
 import { AnalysisService } from '../analysis/analysis.service';
+import { UrlExtractorService } from '../url-analysis/url-extractor.service';
+
+import { UrlAnalyzerService } from '../url-analysis/url-analyzer.service';
 
 @Injectable()
 export class ConversationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly analysisService: AnalysisService,
+    private readonly urlExtractorService: UrlExtractorService,
+    private readonly urlAnalyzerService: UrlAnalyzerService,
   ) {}
   async importConversation(user: JwtPayload, dto: ImportConversationDto) {
     let conversation = await this.prisma.conversation.findFirst({
@@ -60,12 +65,22 @@ export class ConversationsService {
     };
   }
 
-  async findAll(user: JwtPayload, search?: string) {
+  async findAll(user: JwtPayload, search?: string, filter?: string) {
     const normalizedSearch = search?.trim();
 
     const conversations = await this.prisma.conversation.findMany({
       where: {
         companyId: user.companyId,
+
+        ...(filter === 'threats'
+          ? {
+              analysis: {
+                some: {
+                  riskLevel: 'HIGH',
+                },
+              },
+            }
+          : {}),
 
         ...(normalizedSearch
           ? {
@@ -189,6 +204,17 @@ export class ConversationsService {
       throw new NotFoundException('Conversación no encontrada.');
     }
 
-    return conversation;
+    return {
+      ...conversation,
+      messages: conversation.messages.map((message) => {
+        const urls = this.urlExtractorService.extractUrls(message.content);
+
+        return {
+          ...message,
+          urls,
+          urlAnalysis: urls.map((url) => this.urlAnalyzerService.analyze(url)),
+        };
+      }),
+    };
   }
 }

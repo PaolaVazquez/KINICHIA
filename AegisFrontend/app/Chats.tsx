@@ -39,7 +39,7 @@ export default function Chat() {
         setLoading(true);
         setError("");
 
-        const data = await getConversations(search);
+        const data = await getConversations(search, filter);
 
         console.log("💬 Conversaciones recuperadas:", data);
 
@@ -58,7 +58,7 @@ export default function Chat() {
     }, 400);
 
     return () => clearTimeout(timeout);
-  }, [search]);
+  }, [search, filter]);
 
   const formatTime = (date: string | null) => {
     if (!date) {
@@ -77,17 +77,6 @@ export default function Chat() {
       minute: "2-digit",
     });
   };
-  const filteredConversations = conversations.filter((conversation) => {
-    if (filter === "active") {
-      return conversation.status === "PENDING";
-    }
-
-    if (filter === "resolved") {
-      return conversation.status === "RESOLVED";
-    }
-
-    return true;
-  });
 
   return (
     <AppLayout
@@ -169,7 +158,7 @@ export default function Chat() {
           </View>
         )}
 
-        {!loading && error === "" && filteredConversations.length === 0 && (
+        {!loading && error === "" && conversations.length === 0 && (
           <View style={styles.stateContainer}>
             <Feather name="message-circle" size={32} color={Colors.aqua} />
 
@@ -182,7 +171,7 @@ export default function Chat() {
         {!loading &&
           error === "" &&
           search.trim() === "" &&
-          filteredConversations.map((conversation) => (
+          conversations.map((conversation) => (
             <ChatItem
               key={conversation.id}
               avatar={require("../assets/images/icono-profile.png")}
@@ -202,7 +191,7 @@ export default function Chat() {
               Resultados para: {search.trim()}
             </Text>
 
-            {filteredConversations.flatMap((conversation) =>
+            {conversations.flatMap((conversation) =>
               conversation.searchMatches.map((match) => (
                 <Pressable
                   key={`${conversation.id}-${match.id}`}

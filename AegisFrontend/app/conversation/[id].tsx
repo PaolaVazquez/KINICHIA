@@ -17,6 +17,7 @@ import { ConversationDetail, getConversation } from "@/services/conversations";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ConversationScreen() {
+  const [expandedUrl, setExpandedUrl] = useState<string | null>(null);
   const { id, messageId } = useLocalSearchParams<{
     id: string;
     messageId?: string;
@@ -48,7 +49,7 @@ export default function ConversationScreen() {
       duration: 250,
       useNativeDriver: true,
     }).start();
-  }, [analysisExpanded]);
+  }, [analysisExpanded, analysisAnimation]);
 
   useEffect(() => {
     if (!id) {
@@ -180,7 +181,12 @@ export default function ConversationScreen() {
                 ]}
               >
                 <Text style={styles.riskText}>
-                  RIESGO {latestAnalysis.riskLevel}
+                  RIESGO{" "}
+                  {latestAnalysis.riskLevel === "HIGH"
+                    ? "ALTO"
+                    : latestAnalysis.riskLevel === "MEDIUM"
+                      ? "MEDIO"
+                      : "BAJO"}
                 </Text>
               </View>
 
@@ -298,6 +304,110 @@ export default function ConversationScreen() {
                   {message.content}
                 </Text>
 
+                {message.urlAnalysis?.map((analysis) => {
+                  const isExpanded = expandedUrl === analysis.url;
+
+                  return (
+                    <View
+                      key={analysis.url}
+                      style={styles.urlAnalysisContainer}
+                    >
+                      <View style={styles.urlHeader}>
+                        <Feather name="link" size={14} color={Colors.aqua} />
+
+                        <Text
+                          style={[
+                            styles.urlText,
+                            !isClient && styles.companyUrlText,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {analysis.url}
+                        </Text>
+                      </View>
+
+                      <Pressable
+                        style={styles.urlToggle}
+                        onPress={() =>
+                          setExpandedUrl(isExpanded ? null : analysis.url)
+                        }
+                      >
+                        <Text style={styles.urlToggleText}>
+                          {isExpanded ? "Ocultar análisis" : "Ver análisis"}
+                        </Text>
+
+                        <Feather
+                          name={isExpanded ? "chevron-up" : "chevron-down"}
+                          size={14}
+                          color={Colors.aqua}
+                        />
+                      </Pressable>
+
+                      {isExpanded && (
+                        <View style={styles.urlDetails}>
+                          <View
+                            style={[
+                              styles.urlRiskBadge,
+                              analysis.riskLevel === "HIGH" &&
+                                styles.urlHighRisk,
+                              analysis.riskLevel === "MEDIUM" &&
+                                styles.urlMediumRisk,
+                              analysis.riskLevel === "LOW" && styles.urlLowRisk,
+                            ]}
+                          >
+                            <Text style={styles.urlRiskText}>
+                              {analysis.riskLevel === "HIGH"
+                                ? "RIESGO ALTO"
+                                : analysis.riskLevel === "MEDIUM"
+                                  ? "RIESGO MEDIO"
+                                  : "RIESGO BAJO "}
+                            </Text>
+                          </View>
+
+                          <Text style={styles.urlScore}>
+                            Score {analysis.score}/100
+                          </Text>
+
+                          {analysis.signals.length > 0 && (
+                            <View style={styles.urlSection}>
+                              <Text style={styles.urlSectionTitle}>
+                                Señales detectadas
+                              </Text>
+
+                              {analysis.signals.map((signal, index) => (
+                                <Text
+                                  key={`${analysis.url}-signal-${index}`}
+                                  style={styles.urlItem}
+                                >
+                                  • {signal}
+                                </Text>
+                              ))}
+                            </View>
+                          )}
+
+                          {analysis.recommendations.length > 0 && (
+                            <View style={styles.urlSection}>
+                              <Text style={styles.urlSectionTitle}>
+                                Recomendaciones
+                              </Text>
+
+                              {analysis.recommendations.map(
+                                (recommendation, index) => (
+                                  <Text
+                                    key={`${analysis.url}-recommendation-${index}`}
+                                    style={styles.urlItem}
+                                  >
+                                    • {recommendation}
+                                  </Text>
+                                ),
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
                 <Text
                   style={[
                     styles.messageTime,
@@ -585,5 +695,100 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.9,
     shadowRadius: 8,
     elevation: 6,
+  },
+
+  urlAnalysisContainer: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.12)",
+  },
+
+  urlHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  urlText: {
+    flex: 1,
+    color: Colors.aqua,
+    fontFamily: Fonts.medium,
+    fontSize: 11,
+  },
+
+  companyUrlText: {
+    color: Colors.fondo,
+  },
+
+  urlToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 5,
+    marginTop: 8,
+  },
+
+  urlToggleText: {
+    color: Colors.aqua,
+    fontFamily: Fonts.medium,
+    fontSize: 10,
+  },
+
+  urlDetails: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,0,0,0.12)",
+  },
+
+  urlRiskBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 7,
+  },
+
+  urlLowRisk: {
+    backgroundColor: "#26735B",
+  },
+
+  urlMediumRisk: {
+    backgroundColor: "#8B6B26",
+  },
+
+  urlHighRisk: {
+    backgroundColor: "#8B2635",
+  },
+
+  urlRiskText: {
+    color: "white",
+    fontFamily: Fonts.heavy,
+    fontSize: 8,
+  },
+
+  urlScore: {
+    color: "#A9B7C6",
+    fontFamily: Fonts.regular,
+    fontSize: 10,
+    marginTop: 6,
+  },
+
+  urlSection: {
+    marginTop: 10,
+  },
+
+  urlSectionTitle: {
+    color: "white",
+    fontFamily: Fonts.bold,
+    fontSize: 10,
+    marginBottom: 4,
+  },
+
+  urlItem: {
+    color: "#A9B7C6",
+    fontFamily: Fonts.regular,
+    fontSize: 9,
+    lineHeight: 15,
   },
 });
