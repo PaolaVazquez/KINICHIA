@@ -30,6 +30,17 @@ export interface Conversation {
   searchMatches: SearchMatch[];
 }
 
+export interface ConversationStats {
+  all: number;
+  active: number;
+  threats: number;
+  resolved: number;
+}
+
+export async function getConversationStats(): Promise<ConversationStats> {
+  return apiFetch<ConversationStats>("/conversations/stats");
+}
+
 export interface Message {
   id: string;
   sender: "CLIENT" | "COMPANY";

@@ -54,7 +54,12 @@ export class ConversationsController {
   ) {
     return this.conversationsService.findAll(user, search, filter);
   }
-
+  @Get('stats')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  getStats(@CurrentUser() user: JwtPayload) {
+    return this.conversationsService.getStats(user);
+  }
   @Get(':id')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)

@@ -18,7 +18,7 @@ export default function LoaderScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace("/Login");
-    }, 2800); // duración de tu video
+    }, 2800); // duración de video
 
     return () => clearTimeout(timer);
   }, []);

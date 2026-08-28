@@ -19,7 +19,12 @@ import { Colors, Dimensions, Fonts, Spacing } from "@/constants";
 import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Conversation, getConversations } from "@/services/conversations";
+import {
+  Conversation,
+  ConversationStats,
+  getConversationStats,
+  getConversations,
+} from "@/services/conversations";
 
 export default function Chat() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -29,6 +34,13 @@ export default function Chat() {
   const [search, setSearch] = useState("");
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  const [stats, setStats] = useState<ConversationStats>({
+    all: 0,
+    active: 0,
+    threats: 0,
+    resolved: 0,
+  });
 
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +56,12 @@ export default function Chat() {
         console.log("💬 Conversaciones recuperadas:", data);
 
         setConversations(data);
+
+        const statsData = await getConversationStats();
+
+        console.log("📊 Estadísticas:", statsData);
+
+        setStats(statsData);
       } catch (error) {
         console.error("❌ Error recuperando conversaciones:", error);
 
@@ -118,26 +136,22 @@ export default function Chat() {
             {
               label: "Todos",
               value: "all",
-              count: conversations.length,
+              count: stats.all,
             },
             {
               label: "Activos",
               value: "active",
-              count: conversations.filter(
-                (conversation) => conversation.status === "PENDING",
-              ).length,
+              count: stats.active,
             },
             {
               label: "Amenazas",
               value: "threats",
-              count: 0,
+              count: stats.threats,
             },
             {
               label: "Resueltos",
               value: "resolved",
-              count: conversations.filter(
-                (conversation) => conversation.status === "RESOLVED",
-              ).length,
+              count: stats.resolved,
             },
           ]}
         />

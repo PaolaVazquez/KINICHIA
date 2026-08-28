@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
 
     padding: 16,
 
-    minHeight: 170,
+    minHeight: 220,
   },
 
   title: {

@@ -8,6 +8,8 @@ import { UrlExtractorService } from '../url-analysis/url-extractor.service';
 
 import { UrlAnalyzerService } from '../url-analysis/url-analyzer.service';
 
+import { ConversationStatus, RiskLevel } from '@prisma/client';
+
 @Injectable()
 export class ConversationsService {
   constructor(
@@ -76,11 +78,19 @@ export class ConversationsService {
           ? {
               analysis: {
                 some: {
-                  riskLevel: 'HIGH',
+                  riskLevel: RiskLevel.HIGH,
                 },
               },
             }
-          : {}),
+          : filter === 'active'
+            ? {
+                status: ConversationStatus.PENDING,
+              }
+            : filter === 'resolved'
+              ? {
+                  status: ConversationStatus.ARCHIVED,
+                }
+              : {}),
 
         ...(normalizedSearch
           ? {
@@ -182,6 +192,48 @@ export class ConversationsService {
     );
 
     return conversationsWithMatches;
+  }
+
+  async getStats(user: JwtPayload) {
+    const [all, active, threats, resolved] = await Promise.all([
+      this.prisma.conversation.count({
+        where: {
+          companyId: user.companyId,
+        },
+      }),
+
+      this.prisma.conversation.count({
+        where: {
+          companyId: user.companyId,
+          status: ConversationStatus.PENDING,
+        },
+      }),
+
+      this.prisma.conversation.count({
+        where: {
+          companyId: user.companyId,
+          analysis: {
+            some: {
+              riskLevel: 'HIGH',
+            },
+          },
+        },
+      }),
+
+      this.prisma.conversation.count({
+        where: {
+          companyId: user.companyId,
+          status: ConversationStatus.ARCHIVED,
+        },
+      }),
+    ]);
+
+    return {
+      all,
+      active,
+      threats,
+      resolved,
+    };
   }
 
   async findOne(id: string, user: JwtPayload) {

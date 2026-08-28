@@ -1,29 +1,36 @@
 import { Feather } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Colors, Fonts } from "@/constants";
 import ChevronRight from "../icons/chevronRight";
 
 type Props = {
-  email: string;
+  title: string;
   date: string;
   status: string;
+  icon?: keyof typeof Feather.glyphMap;
   onPress?: () => void;
 };
 
-export default function RecentActivityItem({ email, date, status }: Props) {
+export default function RecentActivityItem({
+  title,
+  date,
+  status,
+  icon = "activity",
+  onPress,
+}: Props) {
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
       {/* Icono */}
 
       <View style={styles.iconContainer}>
-        <Feather name="mail" size={22} color={Colors.aqua} />
+        <Feather name={icon} size={22} color={Colors.aqua} />
       </View>
 
       {/* Información */}
 
       <View style={styles.infoContainer}>
-        <Text style={styles.email}>{email}</Text>
+        <Text style={styles.email}>{title}</Text>
 
         <Text style={styles.date}>{date}</Text>
       </View>
@@ -37,7 +44,7 @@ export default function RecentActivityItem({ email, date, status }: Props) {
 
         <ChevronRight size={18} color="#A9B7C6" />
       </View>
-    </View>
+    </Pressable>
   );
 }
 const styles = StyleSheet.create({
