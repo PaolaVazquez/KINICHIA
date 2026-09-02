@@ -15,7 +15,7 @@ import AppHeader from "@/components/navigation/AppHeader";
 
 import Input from "@/components/ui/Input";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import { Colors, Dimensions, Fonts, Spacing } from "@/constants";
+import { Colors, Fonts, Spacing } from "@/constants";
 import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -108,17 +108,12 @@ export default function Chat() {
           leftIcon="search"
           value={search}
           onChangeText={setSearch}
+          clearable
+          onClear={() => setSearch("")}
           style={{
             marginTop: Spacing.xl,
             marginBottom: Spacing.lg,
           }}
-          rightIcon={
-            <Feather
-              name="sliders"
-              size={Dimensions.icon.md}
-              color={Colors.aqua}
-            />
-          }
           onRightPress={() => {
             console.log("Abrir filtros");
           }}
@@ -205,37 +200,75 @@ export default function Chat() {
               Resultados para: {search.trim()}
             </Text>
 
-            {conversations.flatMap((conversation) =>
-              conversation.searchMatches.map((match) => (
-                <Pressable
-                  key={`${conversation.id}-${match.id}`}
-                  style={styles.searchResult}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/conversation/[id]",
-                      params: {
-                        id: conversation.id,
-                        messageId: match.id,
-                      },
-                    })
-                  }
-                >
-                  <View style={styles.searchResultHeader}>
-                    <Text style={styles.searchResultName}>
-                      {conversation.contactName || "Contacto desconocido"}
-                    </Text>
+            {conversations.map((conversation) => {
+              const searchMatches = conversation.searchMatches ?? [];
 
-                    <Text style={styles.searchResultTime}>
-                      {formatSearchTime(match.sentAt)}
-                    </Text>
-                  </View>
+              const contactName = conversation.contactName?.toLowerCase() ?? "";
+              const contactIdentifier =
+                conversation.contactIdentifier?.toLowerCase() ?? "";
+              const normalizedSearch = search.trim().toLowerCase();
 
-                  <Text style={styles.searchResultMessage}>
-                    {match.content}
-                  </Text>
-                </Pressable>
-              )),
-            )}
+              const matchesContact =
+                contactName.includes(normalizedSearch) ||
+                contactIdentifier.includes(normalizedSearch);
+
+              return (
+                <View key={conversation.id}>
+                  {matchesContact && (
+                    <Pressable
+                      style={styles.searchResult}
+                      onPress={() =>
+                        router.push(`/conversation/${conversation.id}`)
+                      }
+                    >
+                      <View style={styles.searchResultHeader}>
+                        <Text style={styles.searchResultName}>
+                          {conversation.contactName || "Contacto desconocido"}
+                        </Text>
+
+                        <Text style={styles.searchResultTime}>
+                          {formatTime(conversation.lastMessageAt)}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.searchResultMessage}>
+                        {conversation.contactIdentifier}
+                      </Text>
+                    </Pressable>
+                  )}
+
+                  {searchMatches.map((match) => (
+                    <Pressable
+                      key={`${conversation.id}-${match.id}`}
+                      style={styles.searchResult}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/conversation/[id]",
+                          params: {
+                            id: conversation.id,
+                            messageId: match.id,
+                          },
+                        })
+                      }
+                    >
+                      <View style={styles.searchResultHeader}>
+                        <Text style={styles.searchResultName}>
+                          {conversation.contactName || "Contacto desconocido"}
+                        </Text>
+
+                        <Text style={styles.searchResultTime}>
+                          {formatSearchTime(match.sentAt)}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.searchResultMessage}>
+                        {match.content}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              );
+            })}
           </View>
         )}
       </SafeAreaView>

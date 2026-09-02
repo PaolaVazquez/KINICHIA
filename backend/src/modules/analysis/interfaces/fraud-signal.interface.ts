@@ -3,7 +3,12 @@ export type FraudSignalType =
   | 'PAYMENT_REQUEST'
   | 'SUSPICIOUS_LINK'
   | 'URGENCY'
-  | 'CONCEALMENT';
+  | 'ACCOUNT_IMPERSONATION'
+  | 'SUSPICIOUS_REFUND'
+  | 'CONCEALMENT'
+  | 'PAYMENT_PROOF'
+  | 'IRREGULAR_DELIVERY'
+  | 'THIRD_PARTY_PAYMENT';
 
 export type FraudSignalSeverity = 'LOW' | 'MEDIUM' | 'HIGH';
 

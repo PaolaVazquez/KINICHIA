@@ -4,7 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 
 import type { AnalysisContext } from './types/analysis-context.type';
 
-import type { AnalysisResult } from './interfaces/analysis-result.interface';
+//import type { AnalysisResult } from './interfaces/analysis-result.interface';
 import { RuleBasedAnalyzer } from './analyzers/rule-based.analyzer';
 
 @Injectable()

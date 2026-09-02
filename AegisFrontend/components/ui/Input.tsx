@@ -26,6 +26,10 @@ type Props = {
 
   rightIcon?: React.ReactNode;
 
+  clearable?: boolean;
+
+  onClear?: () => void;
+
   onRightPress?: () => void;
 
   secureTextEntry?: boolean;
@@ -59,6 +63,8 @@ export default function Input({
   leftIcon,
   rightIcon,
   onRightPress,
+  clearable = false,
+  onClear,
   secureTextEntry = false,
   keyboardType,
   autoCapitalize,
@@ -112,6 +118,18 @@ export default function Input({
           style={[styles.input, inputStyle]}
           returnKeyType={returnKeyType}
         />
+
+        {clearable && value && value.length > 0 && (
+          <Pressable onPress={onClear} hitSlop={10}>
+            <Feather name="x-circle" size={20} color={Colors.aqua} />
+          </Pressable>
+        )}
+
+        {rightIcon && (
+          <Pressable onPress={onRightPress} hitSlop={10}>
+            {rightIcon}
+          </Pressable>
+        )}
         {rightIcon && (
           <Pressable onPress={onRightPress} hitSlop={10}>
             {rightIcon}
