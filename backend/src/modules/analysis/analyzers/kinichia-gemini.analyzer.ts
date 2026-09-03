@@ -4,7 +4,11 @@ import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import type { AnalysisContext } from '../types/analysis-context.type';
 import type { AnalysisResult } from '../interfaces/analysis-result.interface';
 import type { AnalysisEngine } from '../interfaces/analysis-engine.interface';
-import type { FraudSignal, FraudSignalSeverity, FraudSignalType } from '../interfaces/fraud-signal.interface';
+import type {
+  FraudSignal,
+  FraudSignalSeverity,
+  FraudSignalType,
+} from '../interfaces/fraud-signal.interface';
 
 const SYSTEM_INSTRUCTION = `Eres KINICHIA Security Analyst, un motor de inteligencia artificial especializado en ciberseguridad y análisis antifraude. Analiza conversaciones, chats, correos y SMS para detectar estafas, phishing, ingeniería social, suplantación, fraude financiero y manipulación.
 
@@ -29,21 +33,46 @@ RESPONDE ÚNICAMENTE JSON válido con:
 {"riskLevel":"SAFE|SUSPICIOUS|HIGH_RISK|FRAUD|NEEDS_MORE_CONTEXT","riskScore":0,"confidence":"low|medium|high","senderIntent":"","threatTypes":[],"summary":"","explanation":"","signals":[{"name":"","type":"","severity":"low|medium|high","description":"","evidence":"","reason":""}],"recommendations":[],"requiresMoreContext":false,"additionalContextSuggestions":[]}`;
 
 type GeminiResponse = {
-  riskLevel?: string; riskScore?: number; confidence?: string; senderIntent?: string;
-  threatTypes?: string[]; summary?: string; explanation?: string;
-  signals?: Array<{ name?: string; type?: string; severity?: string; description?: string; evidence?: string; reason?: string }>;
-  recommendations?: string[]; requiresMoreContext?: boolean; additionalContextSuggestions?: string[];
+  riskLevel?: string;
+  riskScore?: number;
+  confidence?: string;
+  senderIntent?: string;
+  threatTypes?: string[];
+  summary?: string;
+  explanation?: string;
+  signals?: Array<{
+    name?: string;
+    type?: string;
+    severity?: string;
+    description?: string;
+    evidence?: string;
+    reason?: string;
+  }>;
+  recommendations?: string[];
+  requiresMoreContext?: boolean;
+  additionalContextSuggestions?: string[];
 };
 
 const SIGNAL_MAP: Record<string, FraudSignalType> = {
-  credential_request: 'CREDENTIAL_REQUEST', credential_theft: 'CREDENTIAL_REQUEST', otp: 'CREDENTIAL_REQUEST', token: 'CREDENTIAL_REQUEST', password: 'CREDENTIAL_REQUEST',
-  payment_request: 'PAYMENT_REQUEST', financial_fraud: 'PAYMENT_REQUEST',
-  suspicious_link: 'SUSPICIOUS_LINK', phishing: 'SUSPICIOUS_LINK',
-  urgency: 'URGENCY', social_engineering: 'URGENCY',
-  account_impersonation: 'ACCOUNT_IMPERSONATION', impersonation: 'ACCOUNT_IMPERSONATION',
-  suspicious_refund: 'SUSPICIOUS_REFUND', payment_proof: 'PAYMENT_PROOF',
-  delivery_fraud: 'IRREGULAR_DELIVERY', irregular_delivery: 'IRREGULAR_DELIVERY',
-  marketplace_fraud: 'THIRD_PARTY_PAYMENT', third_party_payment: 'THIRD_PARTY_PAYMENT',
+  credential_request: 'CREDENTIAL_REQUEST',
+  credential_theft: 'CREDENTIAL_REQUEST',
+  otp: 'CREDENTIAL_REQUEST',
+  token: 'CREDENTIAL_REQUEST',
+  password: 'CREDENTIAL_REQUEST',
+  payment_request: 'PAYMENT_REQUEST',
+  financial_fraud: 'PAYMENT_REQUEST',
+  suspicious_link: 'SUSPICIOUS_LINK',
+  phishing: 'SUSPICIOUS_LINK',
+  urgency: 'URGENCY',
+  social_engineering: 'URGENCY',
+  account_impersonation: 'ACCOUNT_IMPERSONATION',
+  impersonation: 'ACCOUNT_IMPERSONATION',
+  suspicious_refund: 'SUSPICIOUS_REFUND',
+  payment_proof: 'PAYMENT_PROOF',
+  delivery_fraud: 'IRREGULAR_DELIVERY',
+  irregular_delivery: 'IRREGULAR_DELIVERY',
+  marketplace_fraud: 'THIRD_PARTY_PAYMENT',
+  third_party_payment: 'THIRD_PARTY_PAYMENT',
   concealment: 'CONCEALMENT',
 };
 
@@ -55,23 +84,40 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
 
   async analyze(context: AnalysisContext): Promise<AnalysisResult> {
     const text = context.messages
-      .map((m) => `[${m.sender === 'CLIENT' ? 'CLIENTE' : 'EMPRESA'}] ${m.content}`)
+      .map(
+        (m) =>
+          `[${m.sender === 'CLIENT' ? 'CLIENTE' : 'EMPRESA'}] ${m.content}`,
+      )
       .join('\n')
       .trim();
 
-    if (!text) return this.localResult('LOW', 0, 'No hay contenido suficiente para analizar.');
-    if (text.length < 10) return this.localResult('MEDIUM', 10, 'El contenido es demasiado breve para determinar el riesgo con confianza.');
+    if (!text)
+      return this.localResult(
+        'LOW',
+        0,
+        'No hay contenido suficiente para analizar.',
+      );
+    if (text.length < 10)
+      return this.localResult(
+        'MEDIUM',
+        10,
+        'El contenido es demasiado breve para determinar el riesgo con confianza.',
+      );
 
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada en el backend.');
+    if (!apiKey)
+      throw new Error('GEMINI_API_KEY no está configurada en el backend.');
 
     // El SDK de Google expone algunos tipos que ESLint no resuelve correctamente
     // con recommendedTypeChecked. Aislamos esa frontera en un bloque pequeño.
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const ai = new GoogleGenAI({ apiKey });
 
-    const primary = this.config.get<string>('GEMINI_MODEL') || 'gemini-3.8-flash';
-    const fallback = this.config.get<string>('GEMINI_FALLBACK_MODEL') || 'gemini-3.1-flash-lite';
+    const primary =
+      this.config.get<string>('GEMINI_MODEL') || 'gemini-3.8-flash';
+    const fallback =
+      this.config.get<string>('GEMINI_FALLBACK_MODEL') ||
+      'gemini-3.1-flash-lite';
     let raw = '';
     let usedModel = primary;
     let lastError: unknown;
@@ -131,7 +177,10 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
   }
 
   private normalize(parsed: GeminiResponse, modelName: string): AnalysisResult {
-    const score = Math.min(100, Math.max(0, Math.round(Number(parsed.riskScore) || 0)));
+    const score = Math.min(
+      100,
+      Math.max(0, Math.round(Number(parsed.riskScore) || 0)),
+    );
     const rawRisk = String(parsed.riskLevel || '').toUpperCase();
     const riskLevel: AnalysisResult['riskLevel'] =
       rawRisk === 'SAFE'
@@ -149,7 +198,11 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
                   : 'LOW';
 
     const recommendations = Array.isArray(parsed.recommendations)
-      ? parsed.recommendations.map(String).map((x) => x.trim()).filter(Boolean).slice(0, 8)
+      ? parsed.recommendations
+          .map(String)
+          .map((x) => x.trim())
+          .filter(Boolean)
+          .slice(0, 8)
       : [];
 
     const signals: FraudSignal[] = Array.isArray(parsed.signals)
@@ -184,7 +237,12 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
           ? 'LOW'
           : 'MEDIUM';
 
-    const type = SIGNAL_MAP[String(signal.type || '').toLowerCase().trim()] || 'CONCEALMENT';
+    const type =
+      SIGNAL_MAP[
+        String(signal.type || '')
+          .toLowerCase()
+          .trim()
+      ] || 'CONCEALMENT';
 
     return {
       type,
