@@ -17,7 +17,7 @@ ANÁLISIS CONTEXTUAL:
 No marques fraude por palabras aisladas. Evalúa intención, relación entre participantes, evolución, inconsistencias, urgencia, solicitudes de contraseñas/PIN/CVV/OTP/tokens, pagos o transferencias, comprobantes, reembolsos, enlaces sospechosos, archivos/APK, software remoto y suplantación de instituciones. Una interacción legítima que mencione banco, pago, premio, enlace o urgencia no es automáticamente fraude.
 
 EVIDENCIA LITERAL:
-Para cada señal, evidence DEBE ser una subcadena EXACTA del texto original. Nunca inventes, traduzcas ni parafrasees evidencia.
+Para cada señal, evidence DEBE ser una subcadena EXACTA del contenido de un mensaje original. No incluyas etiquetas como [CLIENTE] o [EMPRESA], no inventes, traduzcas ni parafrasees evidencia.
 
 RIESGO:
 SAFE = legítimo; SUSPICIOUS = atípico y requiere verificación; HIGH_RISK = presión o solicitud peligrosa; FRAUD = patrón claro de estafa; NEEDS_MORE_CONTEXT = contexto insuficiente. riskScore es una estimación de 0 a 100, no una probabilidad matemática.
@@ -51,6 +51,7 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
 
   async analyze(context: AnalysisContext): Promise<AnalysisResult> {
     const text = context.messages.map((m) => `[${m.sender === 'CLIENT' ? 'CLIENTE' : 'EMPRESA'}] ${m.content}`).join('\n').trim();
+    const sourceMessages = context.messages.map((m) => m.content);
     if (!text) return this.localResult('LOW', 0, 'No hay contenido suficiente para analizar.');
     if (text.length < 10) return this.localResult('MEDIUM', 10, 'El contenido es demasiado breve para determinar el riesgo con confianza.');
 
@@ -83,7 +84,7 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
     } catch {
       throw new Error('La respuesta de Gemini no tuvo un formato JSON válido.');
     }
-    return this.normalize(parsed, usedModel);
+    return this.normalize(parsed, usedModel, sourceMessages);
   }
 
   private getClient(apiKey: string): GoogleGenAI {
@@ -91,18 +92,18 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
     return this.client;
   }
 
-  private normalize(parsed: GeminiResponse, modelName: string): AnalysisResult {
+  private normalize(parsed: GeminiResponse, modelName: string, sourceMessages: string[]): AnalysisResult {
     const score = Math.min(100, Math.max(0, Math.round(Number(parsed.riskScore) || 0)));
     const rawRisk = String(parsed.riskLevel || '').toUpperCase();
     const riskLevel: AnalysisResult['riskLevel'] = rawRisk === 'SAFE' ? 'LOW' : rawRisk === 'SUSPICIOUS' ? 'MEDIUM' : rawRisk === 'HIGH_RISK' || rawRisk === 'FRAUD' ? 'HIGH' : rawRisk === 'NEEDS_MORE_CONTEXT' ? 'MEDIUM' : score >= 70 ? 'HIGH' : score >= 30 ? 'MEDIUM' : 'LOW';
     const recommendations = Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String).map((x) => x.trim()).filter(Boolean).slice(0, 8) : [];
-    const signals: FraudSignal[] = Array.isArray(parsed.signals) ? parsed.signals.map((s, i) => this.normalizeSignal(s, recommendations[i])).filter((s): s is FraudSignal => Boolean(s)) : [];
+    const signals: FraudSignal[] = Array.isArray(parsed.signals) ? parsed.signals.map((s, i) => this.normalizeSignal(s, recommendations[i], sourceMessages)).filter((s): s is FraudSignal => Boolean(s)) : [];
     return { riskLevel, score, summary: this.text(parsed.summary, 'Análisis completado por KINICHIA.'), signals, recommendations, provider: 'GEMINI', modelName, engineVersion: '2.0.0' };
   }
 
-  private normalizeSignal(signal: NonNullable<GeminiResponse['signals']>[number], recommendation?: string): FraudSignal | null {
+  private normalizeSignal(signal: NonNullable<GeminiResponse['signals']>[number], recommendation: string | undefined, sourceMessages: string[]): FraudSignal | null {
     const evidence = this.text(signal.evidence, '').trim();
-    if (!evidence) return null;
+    if (!evidence || !sourceMessages.some((message) => message.includes(evidence))) return null;
     const sev = String(signal.severity || '').toLowerCase();
     const severity: FraudSignalSeverity = sev.includes('high') || sev.includes('alta') || sev.includes('alto') ? 'HIGH' : sev.includes('low') || sev.includes('baja') || sev.includes('bajo') ? 'LOW' : 'MEDIUM';
     const type = SIGNAL_MAP[String(signal.type || '').toLowerCase().trim()] || 'CONCEALMENT';
