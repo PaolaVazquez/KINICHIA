@@ -108,9 +108,10 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
     if (!apiKey)
       throw new Error('GEMINI_API_KEY no está configurada en el backend.');
 
-    // El SDK de Google expone algunos tipos que ESLint no resuelve correctamente
-    // con recommendedTypeChecked. Aislamos esa frontera en un bloque pequeño.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    // El SDK de Google expone tipos que pueden quedar como "error" para
+    // ESLint cuando se usa recommendedTypeChecked. Esta es una frontera
+    // externa deliberadamente aislada; el resto del motor mantiene tipado estricto.
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
     const ai = new GoogleGenAI({ apiKey });
 
     const primary =
@@ -127,10 +128,6 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
     for (const model of [...new Set([primary, fallback])]) {
       try {
         this.logger.log(`Analizando con ${model}`);
-
-        // Estas dos advertencias vienen del tipado externo del SDK; no afectan
-        // al contrato interno de KINICHIA.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const response = await ai.models.generateContent({
           model,
           contents: prompt,
@@ -153,6 +150,7 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
         this.logger.warn(`Falló ${model}; intentando respaldo.`);
       }
     }
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
 
     if (!raw) {
       throw new Error(
