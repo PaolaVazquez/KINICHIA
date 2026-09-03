@@ -1,27 +1,24 @@
-import { Injectable } from '@nestjs/common';
-
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-
 import type { AnalysisContext } from './types/analysis-context.type';
-
-//import type { AnalysisResult } from './interfaces/analysis-result.interface';
+import type { AnalysisEngine } from './interfaces/analysis-engine.interface';
 import { RuleBasedAnalyzer } from './analyzers/rule-based.analyzer';
+import { KinichiaGeminiAnalyzer } from './analyzers/kinichia-gemini.analyzer';
 
 @Injectable()
 export class AnalysisService {
+  private readonly logger = new Logger(AnalysisService.name);
   private pendingAnalyses = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly analyzer: RuleBasedAnalyzer,
+    private readonly ruleAnalyzer: RuleBasedAnalyzer,
+    private readonly geminiAnalyzer: KinichiaGeminiAnalyzer,
   ) {}
 
   scheduleAnalysis(conversationId: string) {
     const existingTimer = this.pendingAnalyses.get(conversationId);
-
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
+    if (existingTimer) clearTimeout(existingTimer);
 
     const timer = setTimeout(() => {
       void this.analyzeConversation(conversationId);
@@ -32,37 +29,28 @@ export class AnalysisService {
 
   private async analyzeConversation(conversationId: string) {
     const conversation = await this.prisma.conversation.findUnique({
-      where: {
-        id: conversationId,
-      },
-      include: {
-        messages: {
-          orderBy: {
-            sentAt: 'asc',
-          },
-        },
-      },
+      where: { id: conversationId },
+      include: { messages: { orderBy: { sentAt: 'asc' } } },
     });
 
     if (!conversation) {
-      console.log(`⚠️ No se encontró la conversación ${conversationId}`);
-
+      this.logger.warn(`No se encontró la conversación ${conversationId}`);
       this.pendingAnalyses.delete(conversationId);
-
       return;
     }
 
-    console.log(`🧠 Conversación recuperada: ${conversation.id}`);
-
-    console.log(`💬 Mensajes: ${conversation.messages.length}`);
-
     this.pendingAnalyses.delete(conversationId);
-
     const context = this.buildAnalysisContext(conversation);
 
-    const result = await this.analyzer.analyze(context);
+    let result;
+    try {
+      result = await this.geminiAnalyzer.analyze(context);
+    } catch (error) {
+      this.logger.error('Gemini no pudo completar el análisis. Usando motor de respaldo.', error instanceof Error ? error.stack : undefined);
+      result = await this.ruleAnalyzer.analyze(context);
+    }
 
-    console.log('🛡️ Resultado del análisis:', result);
+    this.logger.log(`Análisis ${conversation.id}: ${result.riskLevel} (${result.score})`);
 
     await this.prisma.analysis.create({
       data: {
@@ -72,30 +60,23 @@ export class AnalysisService {
         summary: result.summary,
         reasons: result.signals.map((signal) => signal.evidence),
         recommendations: result.signals.map((signal) => signal.recommendation),
-        provider: 'MOCK',
-        modelName: 'mock-analysis',
-        engineVersion: '1.0.0',
+        provider: result.provider ?? 'RULE_BASED',
+        modelName: result.modelName ?? 'rule-based',
+        engineVersion: result.engineVersion ?? '1.0.0',
       },
     });
 
     await this.prisma.conversation.update({
-      where: {
-        id: conversation.id,
-      },
-      data: {
-        lastAnalyzedAt: new Date(),
-      },
+      where: { id: conversation.id },
+      data: { lastAnalyzedAt: new Date() },
     });
   }
+
   private buildAnalysisContext(conversation: {
     source: string;
     contactName: string | null;
     contactIdentifier: string;
-    messages: {
-      sender: string;
-      content: string;
-      sentAt: Date;
-    }[];
+    messages: { sender: string; content: string; sentAt: Date }[];
   }): AnalysisContext {
     return {
       source: conversation.source,
