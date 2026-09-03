@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import type { AnalysisContext } from './types/analysis-context.type';
-import type { AnalysisEngine } from './interfaces/analysis-engine.interface';
 import { RuleBasedAnalyzer } from './analyzers/rule-based.analyzer';
 import { KinichiaGeminiAnalyzer } from './analyzers/kinichia-gemini.analyzer';
 
@@ -19,11 +18,7 @@ export class AnalysisService {
   scheduleAnalysis(conversationId: string) {
     const existingTimer = this.pendingAnalyses.get(conversationId);
     if (existingTimer) clearTimeout(existingTimer);
-
-    const timer = setTimeout(() => {
-      void this.analyzeConversation(conversationId);
-    }, 10_000);
-
+    const timer = setTimeout(() => { void this.analyzeConversation(conversationId); }, 10_000);
     this.pendingAnalyses.set(conversationId, timer);
   }
 
@@ -32,7 +27,6 @@ export class AnalysisService {
       where: { id: conversationId },
       include: { messages: { orderBy: { sentAt: 'asc' } } },
     });
-
     if (!conversation) {
       this.logger.warn(`No se encontró la conversación ${conversationId}`);
       this.pendingAnalyses.delete(conversationId);
@@ -41,7 +35,6 @@ export class AnalysisService {
 
     this.pendingAnalyses.delete(conversationId);
     const context = this.buildAnalysisContext(conversation);
-
     let result;
     try {
       result = await this.geminiAnalyzer.analyze(context);
@@ -50,8 +43,6 @@ export class AnalysisService {
       result = await this.ruleAnalyzer.analyze(context);
     }
 
-    this.logger.log(`Análisis ${conversation.id}: ${result.riskLevel} (${result.score})`);
-
     await this.prisma.analysis.create({
       data: {
         conversationId: conversation.id,
@@ -59,7 +50,7 @@ export class AnalysisService {
         score: result.score,
         summary: result.summary,
         reasons: result.signals.map((signal) => signal.evidence),
-        recommendations: result.signals.map((signal) => signal.recommendation),
+        recommendations: result.recommendations ?? result.signals.map((signal) => signal.recommendation),
         provider: result.provider ?? 'RULE_BASED',
         modelName: result.modelName ?? 'rule-based',
         engineVersion: result.engineVersion ?? '1.0.0',
@@ -70,6 +61,7 @@ export class AnalysisService {
       where: { id: conversation.id },
       data: { lastAnalyzedAt: new Date() },
     });
+    this.logger.log(`Análisis ${conversation.id}: ${result.riskLevel} (${result.score})`);
   }
 
   private buildAnalysisContext(conversation: {
