@@ -5,4 +5,7 @@ export interface AnalysisResult {
   score: number;
   summary: string;
   signals: FraudSignal[];
+  provider?: string;
+  modelName?: string;
+  engineVersion?: string;
 }
