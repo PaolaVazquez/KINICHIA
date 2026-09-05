@@ -1,157 +1,173 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import Button from "@/components/ui/Button";
-
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/fonts";
+import { apiFetch } from "@/services/api";
 
-import { Feather } from "@expo/vector-icons";
-import Input from "../ui/Input";
+interface AnalysisResponse {
+  message: string;
+  conversation: {
+    id: string;
+  };
+}
 
 export default function EmailInspectionForm() {
+  const [sender, setSender] = useState("");
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAnalyze = async () => {
+    if (!content.trim()) {
+      setError("Pega el contenido que quieres analizar.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiFetch<AnalysisResponse>("/conversations/import", {
+        method: "POST",
+        body: JSON.stringify({
+          source: "MANUAL",
+          contactName: sender.trim() || "Contenido manual",
+          contactIdentifier: sender.trim() || "manual",
+          messages: [
+            {
+              sender: "CLIENT",
+              content: content.trim(),
+            },
+          ],
+        }),
+      });
+
+      console.log("Conversación enviada a análisis:", response.conversation.id);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "No fue posible iniciar el análisis.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.card}>
-      {/* Paso 1 */}
+      <Text style={styles.stepTitle}>1. ¿De quién recibiste el mensaje?</Text>
 
-      <Text style={styles.stepTitle}>1. Ingresa el correo a inspeccionar</Text>
-
-      <Input label="" placeholder="correo@ejemplo.com" leftIcon="mail" />
-
-      {/* Paso 2 */}
+      <TextInput
+        value={sender}
+        onChangeText={setSender}
+        placeholder="correo@ejemplo.com"
+        placeholderTextColor="#8E99AE"
+        autoCapitalize="none"
+        style={styles.input}
+      />
 
       <Text style={[styles.stepTitle, styles.secondTitle]}>
-        2. Pega el contenido completo del correo
+        2. Pega el contenido que quieres analizar
       </Text>
 
       <View style={styles.textAreaContainer}>
-        <Feather name="file-text" size={40} color="#8E99AE" />
-
-        <Text style={styles.dropText}>
-          Arrastra y suelta el archivo{" "}
-          <Text style={styles.emititle}>.emi</Text>{" "}
-        </Text>
-
-        <Text style={styles.secondaryText}>
-          toca para seleccionar o pega el contenido
-        </Text>
+        <Feather name="file-text" size={32} color="#8E99AE" />
+        <TextInput
+          value={content}
+          onChangeText={setContent}
+          placeholder="Pega aquí el correo, mensaje o conversación..."
+          placeholderTextColor="#8E99AE"
+          multiline
+          textAlignVertical="top"
+          style={styles.textArea}
+        />
       </View>
 
-      {/* Paso 3 */}
+      <Text style={[styles.stepTitle, styles.thirdTitle]}>3. Iniciar análisis</Text>
 
-      <Text style={[styles.stepTitle, styles.thirdTitle]}>
-        3. Iniciar análisis
-      </Text>
+      <Button
+        title={loading ? "Analizando..." : "Analizar contenido"}
+        onPress={handleAnalyze}
+      />
 
-      <Button title="Analizar correo" onPress={() => {}} />
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
       <Text style={styles.securityText}>
-        <Feather
-          name="lock"
-          size={12}
-          color="#8E99AE"
-          style={styles.icondatos}
-        />{" "}
-        Tus datos están protegidos y nunca se almacenan.
+        <Feather name="lock" size={12} color="#8E99AE" /> {" "}
+        Tus datos están protegidos y se procesan de forma segura.
       </Text>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   card: {
     width: "90%",
-
     alignSelf: "center",
-
     marginTop: 10,
-
     padding: 25,
-
     borderRadius: 25,
-
     borderWidth: 1,
-
     borderColor: Colors.bordersCard,
-
     backgroundColor: "rgba(2,18,50,0.55)",
   },
-
   stepTitle: {
     color: "white",
-
     fontSize: 14,
-
     fontFamily: Fonts.bold,
-
-    marginBottom: 0,
-
-    marginTop: 0,
   },
-
   secondTitle: {
     marginTop: 20,
     marginBottom: 25,
   },
   thirdTitle: {
     marginTop: 25,
+    marginBottom: 12,
+  },
+  input: {
+    height: 48,
+    marginTop: 10,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderRadius: 14,
+    borderColor: Colors.bordersCard,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    color: "white",
+    fontFamily: Fonts.regular,
+    fontSize: 13,
   },
   textAreaContainer: {
-    height: 160,
-
+    minHeight: 160,
     borderWidth: 2,
-
     borderStyle: "dashed",
-
     borderColor: Colors.bordersCard,
-
     borderRadius: 20,
-
-    justifyContent: "center",
-
-    alignItems: "center",
-
-    paddingHorizontal: 20,
+    padding: 15,
   },
-
-  emititle: {
-    color: Colors.aqua,
-  },
-  dropText: {
+  textArea: {
+    flex: 1,
+    minHeight: 120,
+    marginTop: 10,
     color: "white",
-
-    marginTop: 15,
-
-    fontSize: 12,
-
     fontFamily: Fonts.regular,
-
-    textAlign: "center",
-    opacity: 0.52,
+    fontSize: 13,
   },
-
-  secondaryText: {
-    color: "#FFFFFF",
-
-    marginTop: 5,
-
+  errorText: {
+    color: "#FF6B6B",
+    marginTop: 10,
     textAlign: "center",
     fontFamily: Fonts.regular,
-
-    fontSize: 12,
-    opacity: 0.52,
+    fontSize: 11,
   },
-
   securityText: {
     color: "#8E99AE",
-
     textAlign: "center",
-
     marginTop: 15,
-
     fontSize: 9,
-
     fontFamily: Fonts.medium,
-  },
-  icondatos: {
-    marginRight: 25,
   },
 });
