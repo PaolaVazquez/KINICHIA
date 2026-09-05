@@ -1,7 +1,7 @@
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/fonts";
 import { Feather } from "@expo/vector-icons";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -19,8 +19,9 @@ type Props = {
 };
 
 export default function SideMenu({ onClose }: Props) {
-  const slideAnim = useRef(new Animated.Value(400)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(400));
+
+  const [fadeAnim] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -35,7 +36,7 @@ export default function SideMenu({ onClose }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [slideAnim, fadeAnim]);
   const menuItems = [
     {
       label: "Inicio",
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
 
     zIndex: 999,
 
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
   },
 
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
 
     backgroundColor: "rgba(0,0,0,0.35)",
   },
