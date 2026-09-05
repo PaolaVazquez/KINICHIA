@@ -64,7 +64,7 @@ export interface Analysis {
   riskLevel: string;
   score: number;
   summary: string;
-  reasons: string[];
+  reasons: Array<AnalysisSignal | string>;
   recommendations: string[];
   provider: string;
   modelName: string;

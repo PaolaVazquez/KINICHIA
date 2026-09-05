@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -30,22 +31,27 @@ export default function EmailInspectionForm() {
     setError(null);
 
     try {
-      const response = await apiFetch<AnalysisResponse>("/conversations/import", {
-        method: "POST",
-        body: JSON.stringify({
-          source: "MANUAL",
-          contactName: sender.trim() || "Contenido manual",
-          contactIdentifier: sender.trim() || "manual",
-          messages: [
-            {
-              sender: "CLIENT",
-              content: content.trim(),
-            },
-          ],
-        }),
-      });
+      const response = await apiFetch<AnalysisResponse>(
+        "/conversations/import",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            source: "EMAIL",
+            contactName: sender.trim() || "Contenido manual",
+            contactIdentifier: sender.trim() || "manual",
+            messages: [
+              {
+                sender: "CLIENT",
+                content: content.trim(),
+              },
+            ],
+          }),
+        },
+      );
 
       console.log("Conversación enviada a análisis:", response.conversation.id);
+
+      router.push(`/conversation/${response.conversation.id}`);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -87,7 +93,9 @@ export default function EmailInspectionForm() {
         />
       </View>
 
-      <Text style={[styles.stepTitle, styles.thirdTitle]}>3. Iniciar análisis</Text>
+      <Text style={[styles.stepTitle, styles.thirdTitle]}>
+        3. Iniciar análisis
+      </Text>
 
       <Button
         title={loading ? "Analizando..." : "Analizar contenido"}
@@ -97,8 +105,8 @@ export default function EmailInspectionForm() {
       {error && <Text style={styles.errorText}>{error}</Text>}
 
       <Text style={styles.securityText}>
-        <Feather name="lock" size={12} color="#8E99AE" /> {" "}
-        Tus datos están protegidos y se procesan de forma segura.
+        <Feather name="lock" size={12} color="#8E99AE" /> Tus datos están
+        protegidos y se procesan de forma segura.
       </Text>
     </View>
   );

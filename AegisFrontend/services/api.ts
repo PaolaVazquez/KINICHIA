@@ -2,7 +2,11 @@ import { getToken } from "./storage";
 
 //red casa
 
-const API_URL = "http://192.168.100.59:3000/api";
+//const API_URL = "http://192.168.100.65:3000/api";
+
+//red oficina
+
+const API_URL = "http://192.168.0.129:3000/api";
 
 //Datos iphone
 

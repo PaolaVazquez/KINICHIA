@@ -110,7 +110,7 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
 
     // El SDK de Google expone algunos tipos que ESLint no resuelve correctamente
     // con recommendedTypeChecked. Aislamos esa frontera en un bloque pequeño.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     const ai = new GoogleGenAI({ apiKey });
 
     const primary =
@@ -130,7 +130,7 @@ export class KinichiaGeminiAnalyzer implements AnalysisEngine {
 
         // Estas advertencias vienen del tipado externo del SDK; no afectan
         // al contrato interno de KINICHIA.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
         const response = await ai.models.generateContent({
           model,
           contents: prompt,

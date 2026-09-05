@@ -12,9 +12,54 @@ import {
 } from "react-native";
 
 import { Colors, Fonts } from "@/constants";
-import { ConversationDetail, getConversation } from "@/services/conversations";
+import {
+  AnalysisSignal,
+  ConversationDetail,
+  getConversation,
+} from "@/services/conversations";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const getSignalTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    CREDENTIAL_REQUEST: "Solicitud de credenciales",
+    PAYMENT_REQUEST: "Solicitud de pago",
+    SUSPICIOUS_LINK: "Enlace sospechoso",
+    URGENCY: "Urgencia",
+    ACCOUNT_IMPERSONATION: "Suplantación de identidad",
+    SUSPICIOUS_REFUND: "Reembolso sospechoso",
+    CONCEALMENT: "Intento de ocultamiento",
+    PAYMENT_PROOF: "Comprobante de pago",
+    IRREGULAR_DELIVERY: "Entrega irregular",
+    THIRD_PARTY_PAYMENT: "Pago a terceros",
+  };
+
+  return labels[type] ?? type;
+};
+
+const getSeverityLabel = (severity: string) => {
+  const labels: Record<string, string> = {
+    HIGH: "ALTO",
+    MEDIUM: "MEDIO",
+    LOW: "BAJO",
+  };
+
+  return labels[severity] ?? severity;
+};
+
+const normalizeSignal = (reason: AnalysisSignal | string): AnalysisSignal => {
+  if (typeof reason === "string") {
+    return {
+      type: "UNKNOWN",
+      severity: "LOW",
+      score: 0,
+      evidence: reason,
+      recommendation: "",
+    };
+  }
+
+  return reason;
+};
 
 export default function ConversationScreen() {
   const [expandedUrl, setExpandedUrl] = useState<string | null>(null);
@@ -39,6 +84,8 @@ export default function ConversationScreen() {
 
   const [analysisAnimation] = useState(() => new Animated.Value(0));
 
+  const [analysisPending, setAnalysisPending] = useState(false);
+
   useEffect(() => {
     Animated.timing(analysisAnimation, {
       toValue: analysisExpanded ? 1 : 0,
@@ -52,6 +99,9 @@ export default function ConversationScreen() {
       return;
     }
 
+    let cancelled = false;
+    let attempts = 0;
+
     const loadConversation = async () => {
       try {
         setLoading(true);
@@ -59,10 +109,38 @@ export default function ConversationScreen() {
 
         const data = await getConversation(id);
 
+        if (cancelled) {
+          return;
+        }
+
         console.log("💬 Conversación recuperada:", data);
 
         setConversation(data);
+        setLoading(false);
+
+        // Si todavía no existe un análisis, seguimos esperando.
+        if (data.analysis.length === 0) {
+          setAnalysisPending(true);
+
+          attempts += 1;
+
+          // Máximo 60 intentos (aprox. 3 minutos).
+          if (attempts < 60) {
+            setTimeout(loadConversation, 3000);
+          } else {
+            setAnalysisPending(false);
+          }
+
+          return;
+        }
+
+        // Ya tenemos el análisis.
+        setAnalysisPending(false);
       } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
         console.error("❌ Error recuperando conversación:", error);
 
         setError(
@@ -70,12 +148,17 @@ export default function ConversationScreen() {
             ? error.message
             : "No se pudo cargar la conversación.",
         );
-      } finally {
+
         setLoading(false);
+        setAnalysisPending(false);
       }
     };
 
-    loadConversation();
+    void loadConversation();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (loading) {
@@ -127,6 +210,20 @@ export default function ConversationScreen() {
         </View>
 
         <View style={styles.divider} />
+        {analysisPending && (
+          <View style={styles.analysisPending}>
+            <ActivityIndicator size="small" color={Colors.aqua} />
+
+            <Text style={styles.analysisPendingTitle}>
+              🛡️ KINICHIA está analizando este contenido...
+            </Text>
+
+            <Text style={styles.analysisPendingText}>
+              Estamos revisando posibles señales de fraude o riesgo.
+            </Text>
+          </View>
+        )}
+
         {latestAnalysis && (
           <View style={styles.analysisBanner}>
             <Pressable
@@ -205,19 +302,86 @@ export default function ConversationScreen() {
                   showsVerticalScrollIndicator={true}
                   nestedScrollEnabled={true}
                 >
-                  <Text style={styles.sectionTitle}>🚨 Señales detectadas</Text>
+                  <Text style={styles.sectionTitle}>
+                    {latestAnalysis.reasons.length > 0
+                      ? "🚨 Señales detectadas"
+                      : "🛡️ Verificación de seguridad"}
+                  </Text>
+                  {latestAnalysis.reasons.length > 0 ? (
+                    latestAnalysis.reasons.map((rawReason, index) => {
+                      const reason = normalizeSignal(rawReason);
 
-                  {latestAnalysis.reasons.map((reason, index) => (
-                    <View key={`${reason}-${index}`} style={styles.reasonCard}>
-                      <Feather
-                        name="alert-triangle"
-                        size={16}
-                        color="#FFB84D"
-                      />
+                      return (
+                        <View
+                          key={`${reason.type}-${index}`}
+                          style={styles.reasonCard}
+                        >
+                          <View style={styles.reasonHeader}>
+                            <View style={styles.reasonTitleContainer}>
+                              <Feather
+                                name="alert-triangle"
+                                size={16}
+                                color="#FFB84D"
+                              />
 
-                      <Text style={styles.reasonText}>{reason}</Text>
+                              <Text style={styles.reasonType}>
+                                {getSignalTypeLabel(reason.type)}
+                              </Text>
+                            </View>
+
+                            <View
+                              style={[
+                                styles.reasonSeverityBadge,
+                                reason.severity === "HIGH" &&
+                                  styles.reasonSeverityBadgeHigh,
+                                reason.severity === "MEDIUM" &&
+                                  styles.reasonSeverityBadgeMedium,
+                                reason.severity === "LOW" &&
+                                  styles.reasonSeverityBadgeLow,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.reasonSeverity,
+                                  reason.severity === "HIGH" &&
+                                    styles.reasonSeverityHigh,
+                                  reason.severity === "MEDIUM" &&
+                                    styles.reasonSeverityMedium,
+                                  reason.severity === "LOW" &&
+                                    styles.reasonSeverityLow,
+                                ]}
+                              >
+                                {getSeverityLabel(reason.severity)}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={styles.evidenceContainer}>
+                            <Text style={styles.evidenceLabel}>
+                              EVIDENCIA ENCONTRADA
+                            </Text>
+
+                            <Text style={styles.reasonEvidence}>
+                              “{reason.evidence}”
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <View style={styles.noSignalsCard}>
+                      <Feather name="shield" size={20} color={Colors.aqua} />
+
+                      <Text style={styles.noSignalsTitle}>
+                        No se detectaron señales de riesgo
+                      </Text>
+
+                      <Text style={styles.noSignalsText}>
+                        El contenido analizado no presenta indicios claros de
+                        fraude.
+                      </Text>
                     </View>
-                  ))}
+                  )}
 
                   {latestAnalysis.recommendations.length > 0 && (
                     <View style={styles.recommendationsSection}>
@@ -567,13 +731,135 @@ const styles = StyleSheet.create({
   },
 
   reasonCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
+    alignItems: "stretch",
     padding: 12,
     marginBottom: 8,
     borderRadius: 12,
     backgroundColor: "#252C35",
+  },
+
+  reasonHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+
+  noSignalsCard: {
+    marginTop: 8,
+    padding: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(36, 195, 220, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(36, 195, 220, 0.2)",
+  },
+
+  noSignalsTitle: {
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "white",
+    textAlign: "center",
+  },
+
+  noSignalsText: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#D6DEE8",
+    textAlign: "center",
+  },
+
+  reasonTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+
+  evidenceContainer: {
+    marginTop: 4,
+    marginBottom: 4,
+    paddingLeft: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.aqua,
+  },
+
+  evidenceLabel: {
+    marginBottom: 5,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    color: Colors.aqua,
+  },
+
+  reasonType: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "white",
+  },
+
+  reasonSeverity: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFB84D",
+  },
+
+  reasonSeverityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+
+  reasonSeverityBadgeHigh: {
+    backgroundColor: "rgba(255, 92, 92, 0.15)",
+  },
+
+  reasonSeverityBadgeMedium: {
+    backgroundColor: "rgba(255, 184, 77, 0.15)",
+  },
+
+  reasonSeverityBadgeLow: {
+    backgroundColor: "rgba(36, 195, 220, 0.15)",
+  },
+
+  reasonSeverityHigh: {
+    color: "#FF5C5C",
+  },
+
+  reasonSeverityMedium: {
+    color: "#FFB84D",
+  },
+
+  reasonSeverityLow: {
+    color: Colors.aqua,
+  },
+
+  reasonEvidence: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#D6DEE8",
+    marginBottom: 10,
+  },
+
+  reasonRecommendation: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 4,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+
+  reasonRecommendationText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.aqua,
   },
 
   reasonText: {
@@ -794,5 +1080,32 @@ const styles = StyleSheet.create({
 
   analysisScrollContent: {
     paddingBottom: 5,
+  },
+
+  analysisPending: {
+    marginTop: 12,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.bordersCard,
+    borderWidth: 1,
+    borderColor: Colors.aqua,
+  },
+
+  analysisPendingTitle: {
+    marginTop: 10,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "white",
+    textAlign: "center",
+  },
+
+  analysisPendingText: {
+    marginTop: 6,
+    fontSize: 13,
+    color: Colors.warning,
+    textAlign: "center",
   },
 });

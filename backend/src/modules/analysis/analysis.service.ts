@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { Prisma } from '@prisma/client';
 import type { AnalysisContext } from './types/analysis-context.type';
 import { RuleBasedAnalyzer } from './analyzers/rule-based.analyzer';
 import { KinichiaGeminiAnalyzer } from './analyzers/kinichia-gemini.analyzer';
+
+import { AnalysisResult } from './interfaces/analysis-result.interface';
 
 @Injectable()
 export class AnalysisService {
@@ -18,7 +21,9 @@ export class AnalysisService {
   scheduleAnalysis(conversationId: string) {
     const existingTimer = this.pendingAnalyses.get(conversationId);
     if (existingTimer) clearTimeout(existingTimer);
-    const timer = setTimeout(() => { void this.analyzeConversation(conversationId); }, 10_000);
+    const timer = setTimeout(() => {
+      void this.analyzeConversation(conversationId);
+    }, 10_000);
     this.pendingAnalyses.set(conversationId, timer);
   }
 
@@ -35,11 +40,14 @@ export class AnalysisService {
 
     this.pendingAnalyses.delete(conversationId);
     const context = this.buildAnalysisContext(conversation);
-    let result;
+    let result: AnalysisResult;
     try {
       result = await this.geminiAnalyzer.analyze(context);
     } catch (error) {
-      this.logger.error('Gemini no pudo completar el análisis. Usando motor de respaldo.', error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        'Gemini no pudo completar el análisis. Usando motor de respaldo.',
+        error instanceof Error ? error.stack : undefined,
+      );
       result = await this.ruleAnalyzer.analyze(context);
     }
 
@@ -49,11 +57,14 @@ export class AnalysisService {
         riskLevel: result.riskLevel,
         score: result.score,
         summary: result.summary,
-        reasons: result.signals.map((signal) => signal.evidence),
-        recommendations: result.recommendations ?? result.signals.map((signal) => signal.recommendation),
+        reasons: result.signals as unknown as Prisma.InputJsonValue,
+        recommendations:
+          result.recommendations ??
+          result.signals.map((signal) => signal.recommendation),
         provider: result.provider ?? 'RULE_BASED',
         modelName: result.modelName ?? 'rule-based',
         engineVersion: result.engineVersion ?? '1.0.0',
+        analyzedAt: new Date(),
       },
     });
 
@@ -61,7 +72,9 @@ export class AnalysisService {
       where: { id: conversation.id },
       data: { lastAnalyzedAt: new Date() },
     });
-    this.logger.log(`Análisis ${conversation.id}: ${result.riskLevel} (${result.score})`);
+    this.logger.log(
+      `Análisis ${conversation.id}: ${result.riskLevel} (${result.score})`,
+    );
   }
 
   private buildAnalysisContext(conversation: {
