@@ -167,15 +167,18 @@ export default function Chat() {
           </View>
         )}
 
-        {!loading && error === "" && conversations.length === 0 && (
-          <View style={styles.stateContainer}>
-            <Feather name="message-circle" size={32} color={Colors.aqua} />
+        {!loading &&
+          error === "" &&
+          conversations.length === 0 &&
+          search.trim() === "" && (
+            <View style={styles.stateContainer}>
+              <Feather name="message-circle" size={32} color={Colors.aqua} />
 
-            <Text style={styles.stateText}>
-              No hay conversaciones para mostrar.
-            </Text>
-          </View>
-        )}
+              <Text style={styles.stateText}>
+                No hay conversaciones para mostrar.
+              </Text>
+            </View>
+          )}
 
         {!loading &&
           error === "" &&
@@ -199,6 +202,16 @@ export default function Chat() {
             <Text style={styles.searchResultsTitle}>
               Resultados para: {search.trim()}
             </Text>
+
+            {conversations.length === 0 && (
+              <View style={styles.searchEmptyContainer}>
+                <Feather name="message-circle" size={32} color={Colors.aqua} />
+
+                <Text style={styles.stateText}>
+                  No hay conversaciones para mostrar.
+                </Text>
+              </View>
+            )}
 
             {conversations.map((conversation) => {
               const searchMatches = conversation.searchMatches ?? [];
@@ -342,5 +355,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 13,
     lineHeight: 19,
+  },
+
+  searchEmptyContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 30,
+    paddingVertical: 20,
+    gap: 12,
   },
 });

@@ -35,13 +35,9 @@ export default function ConversationScreen() {
 
   const hasScrolledToMessage = useRef(false);
 
-  const [highlightedMessageId, setHighlightedMessageId] = useState<
-    string | null
-  >(null);
-
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
 
-  const analysisAnimation = useRef(new Animated.Value(0)).current;
+  const [analysisAnimation] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(analysisAnimation, {
@@ -81,15 +77,6 @@ export default function ConversationScreen() {
 
     loadConversation();
   }, [id]);
-  useEffect(() => {
-    hasScrolledToMessage.current = false;
-
-    if (messageId) {
-      setHighlightedMessageId(messageId);
-    } else {
-      setHighlightedMessageId(null);
-    }
-  }, [messageId]);
 
   if (loading) {
     return (
@@ -212,39 +199,53 @@ export default function ConversationScreen() {
                   },
                 ]}
               >
-                <Text style={styles.sectionTitle}>🚨 Señales detectadas</Text>
+                <ScrollView
+                  style={styles.analysisScroll}
+                  contentContainerStyle={styles.analysisScrollContent}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  <Text style={styles.sectionTitle}>🚨 Señales detectadas</Text>
 
-                {latestAnalysis.reasons.map((reason, index) => (
-                  <View key={`${reason}-${index}`} style={styles.reasonCard}>
-                    <Feather name="alert-triangle" size={16} color="#FFB84D" />
+                  {latestAnalysis.reasons.map((reason, index) => (
+                    <View key={`${reason}-${index}`} style={styles.reasonCard}>
+                      <Feather
+                        name="alert-triangle"
+                        size={16}
+                        color="#FFB84D"
+                      />
 
-                    <Text style={styles.reasonText}>{reason}</Text>
-                  </View>
-                ))}
-                {latestAnalysis.recommendations.length > 0 && (
-                  <View style={styles.recommendationsSection}>
-                    <Text style={styles.sectionTitle}>💡 Recomendaciones</Text>
+                      <Text style={styles.reasonText}>{reason}</Text>
+                    </View>
+                  ))}
 
-                    {latestAnalysis.recommendations.map(
-                      (recommendation, index) => (
-                        <View
-                          key={`${recommendation}-${index}`}
-                          style={styles.recommendationCard}
-                        >
-                          <Feather
-                            name="check-circle"
-                            size={16}
-                            color={Colors.aqua}
-                          />
+                  {latestAnalysis.recommendations.length > 0 && (
+                    <View style={styles.recommendationsSection}>
+                      <Text style={styles.sectionTitle}>
+                        💡 Recomendaciones
+                      </Text>
 
-                          <Text style={styles.recommendationText}>
-                            {recommendation}
-                          </Text>
-                        </View>
-                      ),
-                    )}
-                  </View>
-                )}
+                      {latestAnalysis.recommendations.map(
+                        (recommendation, index) => (
+                          <View
+                            key={`${recommendation}-${index}`}
+                            style={styles.recommendationCard}
+                          >
+                            <Feather
+                              name="check-circle"
+                              size={16}
+                              color={Colors.aqua}
+                            />
+
+                            <Text style={styles.recommendationText}>
+                              {recommendation}
+                            </Text>
+                          </View>
+                        ),
+                      )}
+                    </View>
+                  )}
+                </ScrollView>
               </Animated.View>
             )}
           </View>
@@ -282,17 +283,12 @@ export default function ConversationScreen() {
                         animated: true,
                       });
                     }, 150);
-
-                    setTimeout(() => {
-                      setHighlightedMessageId(null);
-                    }, 2500);
                   }
                 }}
                 style={[
                   styles.messageBubble,
                   isClient ? styles.clientMessage : styles.companyMessage,
-                  highlightedMessageId === message.id &&
-                    styles.highlightedMessage,
+                  messageId === message.id && styles.highlightedMessage,
                 ]}
               >
                 <Text
@@ -790,5 +786,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 9,
     lineHeight: 15,
+  },
+
+  analysisScroll: {
+    maxHeight: 500,
+  },
+
+  analysisScrollContent: {
+    paddingBottom: 5,
   },
 });

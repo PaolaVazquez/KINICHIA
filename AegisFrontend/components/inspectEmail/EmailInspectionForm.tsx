@@ -15,7 +15,7 @@ export default function EmailInspectionForm() {
 
       <Text style={styles.stepTitle}>1. Ingresa el correo a inspeccionar</Text>
 
-      <Input label="" placeholder="correo@ejemplo.com" icon="mail" />
+      <Input label="" placeholder="correo@ejemplo.com" leftIcon="mail" />
 
       {/* Paso 2 */}
 
