@@ -139,6 +139,11 @@ model Analysis {
 
   engineVersion String
 
+  promptTokenCount Int?
+  candidatesTokenCount Int?
+  thoughtsTokenCount Int?
+  totalTokenCount Int?
+
   analyzedAt DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id])
