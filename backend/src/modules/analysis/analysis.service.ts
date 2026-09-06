@@ -64,6 +64,10 @@ export class AnalysisService {
         provider: result.provider ?? 'RULE_BASED',
         modelName: result.modelName ?? 'rule-based',
         engineVersion: result.engineVersion ?? '1.0.0',
+        promptTokenCount: result.usage?.promptTokenCount ?? null,
+        candidatesTokenCount: result.usage?.candidatesTokenCount ?? null,
+        thoughtsTokenCount: result.usage?.thoughtsTokenCount ?? null,
+        totalTokenCount: result.usage?.totalTokenCount ?? null,
         analyzedAt: new Date(),
       },
     });
@@ -73,7 +77,10 @@ export class AnalysisService {
       data: { lastAnalyzedAt: new Date() },
     });
     this.logger.log(
-      `Análisis ${conversation.id}: ${result.riskLevel} (${result.score})`,
+      `Análisis ${conversation.id}: ${result.riskLevel} (${result.score})` +
+        (result.usage
+          ? ` | tokens: ${result.usage.totalTokenCount ?? 0}`
+          : ''),
     );
   }
 
