@@ -221,6 +221,10 @@ export default function ConversationScreen() {
             <Text style={styles.analysisPendingText}>
               Estamos revisando posibles señales de fraude o riesgo.
             </Text>
+
+            <Text style={styles.analysisPendingPoweredBy}>
+              Powered by Gemini
+            </Text>
           </View>
         )}
 
@@ -1106,6 +1110,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: Colors.warning,
+    textAlign: "center",
+  },
+  
+  analysisPendingPoweredBy: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: "600",
+    color: Colors.aqua,
     textAlign: "center",
   },
 });
